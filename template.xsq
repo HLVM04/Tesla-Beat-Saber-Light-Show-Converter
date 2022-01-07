@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsequence BaseChannel="0" ChanCtrlBasic="0" ChanCtrlColor="0" FixedPointTiming="1" ModelBlending="true">
+  <head>
+    <version>2021.40</version>
+    <author></author>
+    <author-email></author-email>
+    <author-website></author-website>
+    <song></song>
+    <artist></artist>
+    <album></album>
+    <MusicURL></MusicURL>
+    <comment></comment>
+    <sequenceTiming>50 ms</sequenceTiming>
+    <sequenceType>Animation</sequenceType>
+    <mediaFile></mediaFile>
+    <sequenceDuration>30.000</sequenceDuration>
+    <imageDir></imageDir>
+  </head>
+  <nextid>1</nextid>
+  <Jukebox/>
+  <ColorPalettes>
+    <ColorPalette>C_BUTTON_Palette1=#323233,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#fefcff,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#313132,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#4b4b4c,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#b1afb2,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#181819,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#e4e2e5,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#3e3e3f,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#bebcbf,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#7e7d7f,C_CHECKBOX_Palette1=1</ColorPalette>
+  </ColorPalettes>
+  <EffectDB>
+    <Effect></Effect>
+  </EffectDB>
+  <DataLayers>
+    <DataLayer lor_params="506" channel_offset="0" num_channels="0" num_frames="0" data="&lt;rendered: erase-mode&gt;" source="&lt;auto-generated&gt;" name="Nutcracker"/>
+  </DataLayers>
+  <DisplayElements>
+    <Element collapsed="0" type="timing" name="New Timing" visible="1" views="Master View" active="1"/>
+    <Element collapsed="0" type="model" name="Tesla Model S" visible="1"/>
+  </DisplayElements>
+  <ElementEffects>
+    <Element type="timing" name="New Timing">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Tesla Model S">
+      <EffectLayer/>
+      <Strand index="0" name="All Lights and Closures">
+        <Node index="0" name="Left Outer Main Beam"></Node>
+        <Node index="1" name="Right Outer Main Beam"></Node>
+        <Node index="2" name="Left Inner Main Beam"></Node>
+        <Node index="3" name="Right Inner Main Beam"></Node>
+        <Node index="4" name="Left Signature"></Node>
+        <Node index="5" name="Right Signature"> </Node>
+        <Node index="6" name="Left Channel 4"></Node>
+        <Node index="7" name="Right Channel 4"></Node>
+        <Node index="8" name="Left Channel 5"></Node>
+        <Node index="9" name="Right Channel 5"></Node>
+        <Node index="10" name="Left Channel 6"></Node>
+        <Node index="11" name="Right Channel 6"></Node>
+        <Node index="12" name="Left Front Turn"></Node>
+        <Node index="13" name="Right Front Turn"></Node>
+        <Node index="14" name="Left Front Fog"></Node>
+        <Node index="15" name="Right Front Fog"></Node>
+        <Node index="16" name="Left Aux Park"></Node>
+        <Node index="17" name="Right Aux Park"></Node>
+        <Node index="18" name="Left Side Marker"></Node>
+        <Node index="19" name="Right Side Marker"></Node>
+        <Node index="20" name="Left Side Repeater"></Node>
+        <Node index="21" name="Right Side Repeater"></Node>
+        <Node index="22" name="Left Rear Turn"></Node>
+        <Node index="23" name="Right Rear Turn"></Node>
+        <Node index="24" name="Brake Lights"></Node>
+        <Node index="25" name="Left Tail"></Node>
+        <Node index="26" name="Right Tail"></Node>
+        <Node index="27" name="Reverse Lights"></Node>
+        <Node index="28" name="Rear Fog Lights"></Node>
+        <Node index="29" name="License Plate"></Node>
+        <Node index="30" name="Left Falcon Door"></Node>
+        <Node index="31" name="Right Falcon Door"></Node>
+        <Node index="32" name="Left Front Door"></Node>
+        <Node index="33" name="Right Front Door"></Node>
+        <Node index="34" name="Left Mirror"></Node>
+        <Node index="35" name="Right Mirror"></Node>
+        <Node index="36" name="Left Front Window"></Node>
+        <Node index="37" name="Left Rear Window"></Node>
+        <Node index="38" name="Right Front Window"></Node>
+        <Node index="39" name="Right Rear Window"></Node>
+        <Node index="40" name="Liftgate"></Node>
+        <Node index="41" name="Left Front Door Handle"></Node>
+        <Node index="42" name="Left Rear Door Handle"></Node>
+        <Node index="43" name="Right Front Door Handle"></Node>
+        <Node index="44" name="Rear Rear Door Handle"></Node>
+        <Node index="45" name="Charge Port"></Node>
+      </Strand>
+    </Element>
+  </ElementEffects>
+  <lastView>0</lastView>
+  <TimingTags>
+    <Tag number="0" position="-1"/>
+    <Tag number="1" position="-1"/>
+    <Tag number="2" position="-1"/>
+    <Tag number="3" position="-1"/>
+    <Tag number="4" position="-1"/>
+    <Tag number="5" position="-1"/>
+    <Tag number="6" position="-1"/>
+    <Tag number="7" position="-1"/>
+    <Tag number="8" position="-1"/>
+    <Tag number="9" position="-1"/>
+  </TimingTags>
+</xsequence>

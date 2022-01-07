@@ -1,3 +1,8 @@
+# Project generated files
+*.zip
+BeatSaberInputLevel/*
+lightshowOutput/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
