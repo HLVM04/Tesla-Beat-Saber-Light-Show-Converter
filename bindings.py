@@ -1,3 +1,8 @@
+# This script contains info on how the translator should bind the notes to the Tesla lights
+# The individual light numbers have same reference as writen on the official Tesla light show GitHub: https://github.com/teslamotors/light-show#light-channel-locations
+# Some note positions light up more than one LED because there aren't enough LEDs on a Tesla to assign every note position
+# The note position string is based on an x (0-2) and y (0-3) value that describes the in-game note position: https://bsmg.wiki/mapping/map-format.html#notes-2
+
 RightLights = {
     1: "Right Outer Main Beam",
     2: 'Right Inner Main Beam',
