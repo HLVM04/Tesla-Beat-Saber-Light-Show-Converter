@@ -117,3 +117,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# idfk what this is, but i don't like
+.DS_Store
