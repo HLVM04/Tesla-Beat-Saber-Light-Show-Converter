@@ -28,8 +28,20 @@ LeftLights = {
     9: 'Left Aux Park',
     10: 'Left Side Marker',
 }
+
+RearLights = {
+    1: 'Left Side Repeater',
+    2: 'Left Rear Turn',
+    3: 'Left Tail',
+    4: 'Right Side Repeater',
+    5: 'Right Rear Turn',
+    6: 'Right Tail',
+    7: 'Brake Lights',
+    8: 'License Plate',
+}
 RL = RightLights
 LL = LeftLights
+BL = RearLights # BL = BackLights # RL is already used :(
 
 LightBindingsLeft = {
     '00': [LL[7], LL[8]],
@@ -59,4 +71,12 @@ LightBindingsRight = {
     '21': [RL[5]],
     '22': [RL[5]],
     '23': [RL[4]]
+}
+
+LightBindingsRear = {
+    0: [BL[7]],
+    1: [BL[3], BL[6]],
+    2: [BL[1], BL[4]],
+    3: [BL[2], BL[5]],
+    4: [BL[8]],
 }
