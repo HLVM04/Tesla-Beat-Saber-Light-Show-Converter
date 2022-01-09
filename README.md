@@ -27,3 +27,6 @@ Run main.py with first argument being either a path to a Beat Saber difficulty f
 See demo video for examples:
 
 [![Tesla x Beat Saber - Light show convertion demo](https://img.youtube.com/vi/BUHGyO1Vo-Q/0.jpg)](https://www.youtube.com/watch?v=BUHGyO1Vo-Q)
+
+
+Leave a star if you like the project to encurage me to keep working on it :)
