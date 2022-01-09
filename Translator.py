@@ -50,49 +50,46 @@ def translateBeatmap(beatmapFilePath):
             node = root.find(".//Node[@name='" + nodeName + "']")
             node.append(new_element)
 
-    def getNextOff(currentIndex, type, value):
-        for index, i in enumerate(mapData['_events'][currentIndex+1:]):
+    def getNextOff(currentIndex, type, eventType):
+        for index, i in enumerate(mapData[eventType][currentIndex+1:]):
             if i['_type'] == type:
                 return i['_time']
 
     # Notes goes on the front lights
     lastBlockTime = 0
     for i in mapData['_notes']: 
+        startTime = math.floor(i['_time']/bpmPerMillisecond)
+        if startTime > lastBlockTime: lastBlockTime = startTime
+        positionString = str(i['_lineLayer']) + str(i['_lineIndex'])
         if i['_type'] == 0: # Type 0 is left (red) note
-            startTime = math.floor(i['_time']/bpmPerMillisecond)
-            if startTime > lastBlockTime: lastBlockTime = startTime
-            positionString = str(i['_lineLayer']) + str(i['_lineIndex'])
             appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(startTime + LightBlinkDuration) + '" palette="1"/>'), LightBindingsLeft[positionString])
         elif i['_type'] == 1: # Type 0 is right (blue) notes
-            startTime = math.floor(i['_time']/bpmPerMillisecond)
-            if startTime > lastBlockTime: lastBlockTime = startTime
-            positionString = str(i['_lineLayer']) + str(i['_lineIndex'])
             appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(startTime + LightBlinkDuration) + '" palette="1"/>'), LightBindingsRight[positionString])
     
     # Light events goes on the back and blinkers
     for index, i in enumerate(mapData['_events']):
+        startTime = math.floor(i['_time']/bpmPerMillisecond)
+        nextOff = getNextOff(index, i['_type'], '_events') or lastBlockTime
+        endTime = math.floor(nextOff /bpmPerMillisecond)
+        rearBinding = None
+        isBlue = i['_value'] > 0 and i['_value'] < 4
+        isRed = i['_value'] > 4 and i['_value'] < 8
+
         if i['_type'] == 1:
-            if i['_value'] > 0 and i['_value'] < 4:
-                startTime = math.floor(i['_time']/bpmPerMillisecond)
-                nextOff = getNextOff(index, i['_type'], i['_value']) or startTime + 100
-                endTime = math.floor(nextOff /bpmPerMillisecond)
-                appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(endTime) + '" palette="1"/>'), LightBindingsRear[0])
-            elif i['_value'] > 4 and i['_value'] < 8:
-                startTime = math.floor(i['_time']/bpmPerMillisecond)
-                nextOff = getNextOff(index, i['_type'], i['_value']) or startTime + 100
-                endTime = math.floor(nextOff /bpmPerMillisecond)
-                appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(endTime) + '" palette="1"/>'), LightBindingsRear[1])
+            if isBlue:
+                rearBinding = LightBindingsRear[0]
+            elif isRed:
+                rearBinding = LightBindingsRear[1]
         elif i['_type'] == 0:
-            if i['_value'] > 0 and i['_value'] < 4:
-                startTime = math.floor(i['_time']/bpmPerMillisecond)
-                nextOff = getNextOff(index, i['_type'], i['_value']) or startTime + 100
-                endTime = math.floor(nextOff /bpmPerMillisecond)
-                appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(endTime) + '" palette="1"/>'), LightBindingsRear[2])
-            elif i['_value'] > 4 and i['_value'] < 8:
-                startTime = math.floor(i['_time']/bpmPerMillisecond)
-                nextOff = getNextOff(index, i['_type'], i['_value']) or startTime + 100
-                endTime = math.floor(nextOff /bpmPerMillisecond)
-                appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(endTime) + '" palette="1"/>'), LightBindingsRear[3])
+            if isBlue:
+                rearBinding = LightBindingsRear[2]
+            elif isRed:
+                rearBinding = LightBindingsRear[3]
+        
+        if rearBinding == None:
+            continue
+        
+        appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(endTime) + '" palette="1"/>'), rearBinding)
 
             
 
