@@ -31,6 +31,10 @@ def translateBeatmap(beatmapFilePath):
     print("Converting egg to wav...")
     convert_ogg_to_wav(dataDirectory / infoData["_songFilename"], "LightshowOutput/lightshow.wav")
 
+    # Check for required mods and warn if any is found. Modded maps might cause issues with the conversion
+    for requirement in infoData["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][-1]["_customData"]["_requirements"]:
+        print("WARNING: This beat map requires a mod that isn't supported and might cause issues with the conversion: " + requirement)
+
     print("Translating...")
     newSeq = etree.parse('template.xsq') # This is a template of an empty Tesla light show
     root = newSeq.getroot()
@@ -61,6 +65,11 @@ def translateBeatmap(beatmapFilePath):
         startTime = math.floor(i['_time']/bpmPerMillisecond)
         if startTime > lastBlockTime: lastBlockTime = startTime
         positionString = str(i['_lineLayer']) + str(i['_lineIndex'])
+
+        # Skip note if position string is malformed (This usually happens if the beat map require mods to be played, warning should be displayed to user before translation)
+        if not (positionString in LightBindingsLeft):
+            continue
+
         if i['_type'] == 0: # Type 0 is left (red) note
             appendToNodes(etree.fromstring('<Effect ref="0" name="On" selected="1" startTime="' + str(startTime) + '" endTime="' + str(startTime + LightBlinkDuration) + '" palette="1"/>'), LightBindingsLeft[positionString])
         elif i['_type'] == 1: # Type 0 is right (blue) notes
