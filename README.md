@@ -14,6 +14,7 @@ With the new Tesla software update a new light show feature has been added. This
 ### What it doesn't do (yet...)
 - It doesn't output a ready-to-use fseq file. You'll have to load up the xsq file in xLights and compile it to an fseq file
 - It doesn't check for any limit violations. This means you'll most likely have to trim the light show in xLights to stay within limits
+- It doesn't support beat maps that requires mods (Such as Mapping Extensions, Noodle Extensions, etc.)
 
 
 Check out the side by side comparison video:
