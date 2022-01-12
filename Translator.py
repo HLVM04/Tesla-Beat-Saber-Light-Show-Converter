@@ -32,8 +32,11 @@ def translateBeatmap(beatmapFilePath):
     convert_ogg_to_wav(dataDirectory / infoData["_songFilename"], "LightshowOutput/lightshow.wav")
 
     # Check for required mods and warn if any is found. Modded maps might cause issues with the conversion
-    for requirement in infoData["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][-1]["_customData"]["_requirements"]:
-        print("WARNING: This beat map requires a mod that isn't supported and might cause issues with the conversion: " + requirement)
+    try:
+        for requirement in infoData["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][-1]["_customData"]["_requirements"]:
+            print("WARNING: This beat map requires a mod that isn't supported and might cause issues with the conversion: " + requirement)
+    except KeyError:
+        pass
 
     print("Translating...")
     newSeq = etree.parse('template.xsq') # This is a template of an empty Tesla light show
