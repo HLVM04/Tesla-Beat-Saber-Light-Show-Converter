@@ -31,3 +31,16 @@ See demo video for examples:
 
 
 Leave a star if you like the project to encurage me to keep working on it :)
+
+## Step-by-step instructions
+1. Download the repository as a zip from GitHub
+2. Make sure you have Python3 installed on your computer. You can get it from www.python.org
+3. Unzip the zip file you previously downloaded. This is the project folder
+4. Make sure you have FFMpeg installed on your system. If you're using a Mac, I recommend installing it using homebrew. If you're on windows, download the essential binaries from here: https://www.gyan.dev/ffmpeg/builds/ (Download the file called "ffmpeg-release-essentials.zip")
+4b. (For windows only) Extract the zip ffmpeg zip file, go to bin folder and copy all of the content into the same folder as main.py
+5. Open the project folder in the terminal (For windows users i recommend typing "cmd" in the adress bar, when inside the project folder)
+6. Type "python3 main.py URL", but replace the URL part with a link to a BeatSaver map.
+6b. To get the direct link to a beatsaver map, right click the download button on the beatsaver page and copy the link. It should look like this: https://eu.cdn.beatsaver.com/103d39b43966277c5e4167ab086f404e0943891f.zip
+7. The program should now generate a lightshow, and put it in the output folder
+8. You can now open the lightshow file in xLights, eventually trim it to fit the limitations, and then save it as a .fseq file (Use the validation script form Tesla's official lightshow repo)
+9. Done! Put it on your flashdrive and test it :)
