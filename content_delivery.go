@@ -39,8 +39,9 @@ func clearFolder(folder string) error {
 	return nil
 }
 
-func downloadBeatmap(url string) (string, error) {
-	clearFolder("BeatSaberInputLevel")
+func downloadBeatmap(url string, tempDir string) (string, error) {
+	beatSaberDir := filepath.Join(tempDir, "BeatSaberInputLevel")
+	clearFolder(beatSaberDir)
 
 	fmt.Println("Downloading...")
 	resp, err := http.Get(url)
@@ -49,7 +50,8 @@ func downloadBeatmap(url string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create("downloadedBeatmap.zip")
+	zipPath := filepath.Join(tempDir, "downloadedBeatmap.zip")
+	out, err := os.Create(zipPath)
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +63,7 @@ func downloadBeatmap(url string) (string, error) {
 	}
 
 	fmt.Println("Extracting...")
-	r, err := zip.OpenReader("downloadedBeatmap.zip")
+	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +76,7 @@ func downloadBeatmap(url string) (string, error) {
 		}
 		defer rc.Close()
 
-		path := filepath.Join("BeatSaberInputLevel", f.Name)
+		path := filepath.Join(beatSaberDir, f.Name)
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(path, f.FileInfo().Mode())
 			continue
@@ -93,7 +95,7 @@ func downloadBeatmap(url string) (string, error) {
 		}
 	}
 
-	infoFile, err := os.Open("BeatSaberInputLevel/Info.dat")
+	infoFile, err := os.Open(filepath.Join(beatSaberDir, "Info.dat"))
 	if err != nil {
 		return "", err
 	}
@@ -107,5 +109,5 @@ func downloadBeatmap(url string) (string, error) {
 	beatmaps := infoData.DifficultyBeatmapSets[0].DifficultyBeatmaps
 	lastBeatmap := beatmaps[len(beatmaps)-1]
 
-	return "BeatSaberInputLevel/" + lastBeatmap.BeatmapFilename, nil
+	return filepath.Join(beatSaberDir, lastBeatmap.BeatmapFilename), nil
 }

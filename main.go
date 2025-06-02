@@ -5,15 +5,24 @@ import (
 	"math"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 func main() {
 	startTime := time.Now()
 
-	// Make sure folders exist
-	os.MkdirAll("BeatSaberInputLevel", 0755)
+	// Create temp directory for this session
+	tempDir := filepath.Join(os.TempDir(), "tesla-beat-saber-converter")
+	os.MkdirAll(filepath.Join(tempDir, "BeatSaberInputLevel"), 0755)
 	os.MkdirAll("LightshowOutput", 0755)
+
+	// Clean up temp directory on exit
+	defer func() {
+		if _, err := os.Stat(tempDir); err == nil {
+			os.RemoveAll(tempDir)
+		}
+	}()
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: go run main.go <beatmap_url_or_path>")
@@ -24,11 +33,12 @@ func main() {
 
 	// Check if input is a valid URL
 	if _, err := url.ParseRequestURI(input); err == nil {
-		difficultyMapPath, err := downloadBeatmap(input)
+		difficultyMapPath, err := downloadBeatmap(input, tempDir)
 		if err != nil {
 			fmt.Printf("Error downloading beatmap: %v\n", err)
 			os.Exit(1)
 		}
+
 		if err := translateBeatmap(difficultyMapPath); err != nil {
 			fmt.Printf("Error translating beatmap: %v\n", err)
 			os.Exit(1)

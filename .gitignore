@@ -2,6 +2,7 @@
 *.zip
 BeatSaberInputLevel/*
 lightshowOutput/*
+teslabeatmap
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
