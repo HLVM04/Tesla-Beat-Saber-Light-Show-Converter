@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DownloadTimeout = 60 * time.Second // Increased timeout
+	DownloadTimeout = 60 * time.Second   // Increased timeout
 	MaxFileSize     = 1000 * 1024 * 1024 // 1GB
 	MaxRetries      = 3
 	RetryDelay      = 2 * time.Second
@@ -48,7 +48,7 @@ func downloadBeatmap(url string, tempDir string) (string, error) {
 
 func downloadFileWithRetry(url, tempDir string) (string, error) {
 	var lastErr error
-	
+
 	fmt.Println("Downloading BeatMap...")
 
 	for attempt := 1; attempt <= MaxRetries; attempt++ {
@@ -56,20 +56,20 @@ func downloadFileWithRetry(url, tempDir string) (string, error) {
 			fmt.Printf("Retrying download (attempt %d/%d)...\n", attempt, MaxRetries)
 			time.Sleep(RetryDelay)
 		}
-		
+
 		zipPath, err := downloadFile(url, tempDir)
 		if err == nil {
 			return zipPath, nil
 		}
-		
+
 		lastErr = err
-		
+
 		// Clean up partial file
 		if zipPath != "" {
 			os.Remove(zipPath)
 		}
 	}
-	
+
 	return "", fmt.Errorf("download failed after %d attempts: %w", MaxRetries, lastErr)
 }
 
@@ -92,7 +92,7 @@ func downloadFile(url, tempDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	// Add headers that some servers expect
 	req.Header.Set("User-Agent", "Tesla-Beat-Saber-Converter/1.0")
 	req.Header.Set("Accept", "application/octet-stream,*/*")
@@ -123,25 +123,25 @@ func downloadFile(url, tempDir string) (string, error) {
 
 	// Use LimitReader to prevent downloads that are too large
 	limitedReader := io.LimitReader(resp.Body, MaxFileSize+1)
-	
+
 	written, err := io.Copy(out, limitedReader)
 	if err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
-	
+
 	if written > MaxFileSize {
 		return "", fmt.Errorf("file too large: %d bytes (max: %d)", written, MaxFileSize)
 	}
-	
+
 	if written == 0 {
 		return "", fmt.Errorf("downloaded file is empty")
 	}
-	
+
 	// Verify the file was written correctly
 	if err := out.Sync(); err != nil {
 		return "", fmt.Errorf("failed to sync file: %w", err)
 	}
-	
+
 	return zipPath, nil
 }
 
@@ -151,7 +151,7 @@ func extractZip(src, dest string) error {
 	if err != nil {
 		return fmt.Errorf("zip file not found: %w", err)
 	}
-	
+
 	if info.Size() == 0 {
 		return fmt.Errorf("zip file is empty")
 	}
@@ -231,28 +231,4 @@ func findBeatmapFile(beatSaberDir string) (string, error) {
 	}
 
 	return beatmapPath, nil
-}
-
-func clearFolder(folder string) error {
-	if err := os.MkdirAll(folder, 0755); err != nil {
-		return err
-	}
-
-	dir, err := os.Open(folder)
-	if err != nil {
-		return err
-	}
-	defer dir.Close()
-
-	names, err := dir.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-
-	for _, name := range names {
-		if err := os.RemoveAll(filepath.Join(folder, name)); err != nil {
-			fmt.Printf("Warning: Failed to delete %s: %v\n", filepath.Join(folder, name), err)
-		}
-	}
-	return nil
 }

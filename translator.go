@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/gopxl/beep/vorbis"
+	"github.com/gopxl/beep/wav"
 )
 
 const (
@@ -52,6 +55,11 @@ func translateBeatmap(beatmapFilePath string) error {
 	}
 
 	dataDirectory := filepath.Dir(beatmapFilePath)
+
+	// Convert song.egg to wav if it exists (for local files)
+	if err := convertSongToWav(dataDirectory); err != nil {
+		fmt.Printf("Warning: Failed to convert audio file: %v\n", err)
+	}
 
 	mapData, err := loadMapData(beatmapFilePath)
 	if err != nil {
@@ -269,4 +277,75 @@ func (c *LightshowConverter) buildXMLContent() (string, error) {
 	}
 
 	return xmlContent, nil
+}
+
+func convertSongToWav(beatSaberDir string) error {
+	eggPath := filepath.Join(beatSaberDir, "song.egg")
+
+	// Check if song.egg exists
+	if _, err := os.Stat(eggPath); os.IsNotExist(err) {
+		return fmt.Errorf("song.egg file not found")
+	}
+
+	fmt.Println("Converting audio file...")
+
+	// Open the input OGG file (song.egg)
+	oggFile, err := os.Open(eggPath)
+	if err != nil {
+		return fmt.Errorf("failed to open song.egg file: %w", err)
+	}
+	defer oggFile.Close()
+
+	// Decode the OGG file using gopxl/beep/vorbis
+	streamer, format, err := vorbis.Decode(oggFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode OGG file: %w", err)
+	}
+	defer streamer.Close()
+
+	// Ensure output directory exists
+	outputDir := "LightshowOutput"
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Create the output WAV file
+	wavPath := filepath.Join(outputDir, "lightshow.wav")
+	wavFile, err := os.Create(wavPath)
+	if err != nil {
+		return fmt.Errorf("failed to create WAV file: %w", err)
+	}
+	defer wavFile.Close()
+
+	// Encode the audio stream to WAV format using gopxl/beep/wav
+	if err := wav.Encode(wavFile, streamer, format); err != nil {
+		return fmt.Errorf("failed to encode WAV file: %w", err)
+	}
+
+	fmt.Printf("Successfully converted audio to %s\n", wavPath)
+	return nil
+}
+
+func clearFolder(folder string) error {
+	if err := os.MkdirAll(folder, 0755); err != nil {
+		return err
+	}
+
+	dir, err := os.Open(folder)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+
+	names, err := dir.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		if err := os.RemoveAll(filepath.Join(folder, name)); err != nil {
+			fmt.Printf("Warning: Failed to delete %s: %v\n", filepath.Join(folder, name), err)
+		}
+	}
+	return nil
 }
