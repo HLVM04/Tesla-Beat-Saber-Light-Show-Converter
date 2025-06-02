@@ -2,54 +2,82 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 func main() {
 	startTime := time.Now()
 
-	// Create temp directory for this session
-	tempDir := filepath.Join(os.TempDir(), "tesla-beat-saber-converter")
-	os.MkdirAll(filepath.Join(tempDir, "BeatSaberInputLevel"), 0755)
-	os.MkdirAll("LightshowOutput", 0755)
-
-	// Clean up temp directory on exit
-	defer func() {
-		if _, err := os.Stat(tempDir); err == nil {
-			os.RemoveAll(tempDir)
-		}
-	}()
-
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <beatmap_url_or_path>")
+	if err := run(); err != nil {
+		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
+	}
+
+	duration := time.Since(startTime)
+	fmt.Printf("Done in %.3fs!\n", duration.Seconds())
+}
+
+func run() error {
+	if len(os.Args) < 2 {
+		return fmt.Errorf("usage: %s <beatmap_url_or_path>", os.Args[0])
 	}
 
 	input := os.Args[1]
 
-	// Check if input is a valid URL
-	if _, err := url.ParseRequestURI(input); err == nil {
-		difficultyMapPath, err := downloadBeatmap(input, tempDir)
-		if err != nil {
-			fmt.Printf("Error downloading beatmap: %v\n", err)
-			os.Exit(1)
-		}
-
-		if err := translateBeatmap(difficultyMapPath); err != nil {
-			fmt.Printf("Error translating beatmap: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		if err := translateBeatmap(input); err != nil {
-			fmt.Printf("Error translating beatmap: %v\n", err)
-			os.Exit(1)
-		}
+	// Setup directories
+	tempDir := filepath.Join(os.TempDir(), "tesla-beat-saber-converter")
+	if err := setupDirectories(tempDir); err != nil {
+		return fmt.Errorf("failed to setup directories: %w", err)
 	}
 
-	duration := time.Since(startTime)
-	fmt.Printf("Done in %vs!\n", math.Floor(duration.Seconds()*1000)/1000)
+	// Clean up temp directory on exit
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: Failed to clean up temp directory: %v\n", err)
+		}
+	}()
+
+	var beatmapPath string
+	var err error
+
+	if isValidURL(input) {
+		beatmapPath, err = downloadBeatmap(input, tempDir)
+		if err != nil {
+			return fmt.Errorf("failed to download beatmap: %w", err)
+		}
+	} else {
+		if !strings.HasSuffix(input, ".dat") {
+			return fmt.Errorf("invalid file type: expected .dat file")
+		}
+		beatmapPath = input
+	}
+
+	if err := translateBeatmap(beatmapPath); err != nil {
+		return fmt.Errorf("failed to translate beatmap: %w", err)
+	}
+
+	return nil
+}
+
+func isValidURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+func setupDirectories(tempDir string) error {
+	dirs := []string{
+		filepath.Join(tempDir, "BeatSaberInputLevel"),
+		"LightshowOutput",
+	}
+
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+	return nil
 }
