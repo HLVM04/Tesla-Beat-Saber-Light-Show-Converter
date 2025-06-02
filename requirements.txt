@@ -1,4 +1,0 @@
-lxml==4.7.1
-pydub==0.25.1
-requests==2.26.0
-validators==0.18.2
