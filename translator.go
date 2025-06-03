@@ -239,8 +239,8 @@ func loadInfoData(filePath string) (*InfoDataTranslator, error) {
 func checkRequiredMods(infoData *InfoDataTranslator) {
 	if len(infoData.DifficultyBeatmapSets) > 0 && len(infoData.DifficultyBeatmapSets[0].DifficultyBeatmaps) > 0 {
 		requirements := infoData.DifficultyBeatmapSets[0].DifficultyBeatmaps[len(infoData.DifficultyBeatmapSets[0].DifficultyBeatmaps)-1].CustomData.Requirements
-		for _, requirement := range requirements {
-			fmt.Printf("WARNING: This beat map requires a mod that isn't supported and might cause issues with the conversion: %s\n", requirement)
+		if len(requirements) > 0 {
+			fmt.Printf("WARNING: This beat map requires unsupported mods that might cause conversion issues: %s\n", strings.Join(requirements, ", "))
 		}
 	}
 }
