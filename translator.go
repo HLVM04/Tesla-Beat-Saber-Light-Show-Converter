@@ -21,14 +21,15 @@ const (
 )
 
 type MapData struct {
-	Notes  []Note  `json:"_notes"`
-	Events []Event `json:"_events"`
+	Version string  `json:"_version"`
+	Notes   []Note  `json:"_notes"`
+	Events  []Event `json:"_events"`
 }
 
 type Note struct {
 	Time      float64 `json:"_time"`
-	LineLayer int     `json:"_lineLayer"`
 	LineIndex int     `json:"_lineIndex"`
+	LineLayer int     `json:"_lineLayer"`
 	Type      int     `json:"_type"`
 }
 
@@ -38,8 +39,29 @@ type Event struct {
 	Value int     `json:"_value"`
 }
 
+type MapDataV3 struct {
+	Version string    `json:"version"`
+	Notes   []NoteV3  `json:"colorNotes"`
+	Events  []EventV3 `json:"basicBeatmapEvents"`
+}
+
+type NoteV3 struct {
+	Time      float64 `json:"b"`
+	LineIndex int     `json:"x"`
+	LineLayer int     `json:"y"`
+	Type      int     `json:"c"`
+}
+
+type EventV3 struct {
+	Time  float64 `json:"b"`
+	Type  int     `json:"et"`
+	Value int     `json:"i"`
+}
+
 type InfoDataTranslator struct {
+	Version               string  `json:"_version"`
 	BeatsPerMinute        float64 `json:"_beatsPerMinute"`
+	SongFileName          string  `json:"_songFilename"`
 	DifficultyBeatmapSets []struct {
 		DifficultyBeatmaps []struct {
 			CustomData struct {
@@ -56,11 +78,6 @@ func translateBeatmap(beatmapFilePath string) error {
 
 	dataDirectory := filepath.Dir(beatmapFilePath)
 
-	// Convert song.egg to wav if it exists (for local files)
-	if err := convertSongToWav(dataDirectory); err != nil {
-		fmt.Printf("Warning: Failed to convert audio file: %v\n", err)
-	}
-
 	mapData, err := loadMapData(beatmapFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load map data: %w", err)
@@ -71,7 +88,13 @@ func translateBeatmap(beatmapFilePath string) error {
 		return fmt.Errorf("failed to load info data: %w", err)
 	}
 
+	fmt.Printf("BeatMap Version: %s\n", infoData.Version)
 	checkRequiredMods(infoData)
+
+	// Convert song.egg to wav if it exists (for local files)
+	if err := convertSongToWav(dataDirectory, infoData.SongFileName); err != nil {
+		fmt.Printf("Warning: Failed to convert audio file: %v\n", err)
+	}
 
 	fmt.Println("Translating...")
 
@@ -94,18 +117,109 @@ func validateInputFile(filePath string) error {
 	return nil
 }
 
+func detectMapVersion(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	var rawMap map[string]interface{}
+	if err := json.NewDecoder(file).Decode(&rawMap); err != nil {
+		return "", err
+	}
+
+	// Check for v3 version field
+	if version, exists := rawMap["version"]; exists {
+		if versionStr, ok := version.(string); ok {
+			return versionStr, nil
+		}
+	}
+
+	// Check for v2 version field
+	if version, exists := rawMap["_version"]; exists {
+		if versionStr, ok := version.(string); ok {
+			return versionStr, nil
+		}
+	}
+
+	return "", fmt.Errorf("no version field found")
+}
+
 func loadMapData(filePath string) (*MapData, error) {
+	version, err := detectMapVersion(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect map version: %w", err)
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var mapData MapData
-	if err := json.NewDecoder(file).Decode(&mapData); err != nil {
-		return nil, err
+	// Determine major version
+	majorVersion := strings.Split(version, ".")[0]
+
+	switch majorVersion {
+	case "3":
+		fmt.Printf("Detected Beat Saber map version %s\n", version)
+		var mapDataV3 MapDataV3
+		if err := json.NewDecoder(file).Decode(&mapDataV3); err != nil {
+			return nil, err
+		}
+		return convertV3ToV2(&mapDataV3), nil
+	case "2":
+		fmt.Printf("Detected Beat Saber map version %s\n", version)
+		var mapData MapData
+		if err := json.NewDecoder(file).Decode(&mapData); err != nil {
+			return nil, err
+		}
+		return &mapData, nil
+	default:
+		fmt.Printf("WARNING: Unsupported Beat Saber map version %s detected. This version is not officially supported and may cause issues.\n", version)
+		fmt.Println("Attempting to parse using newest supported format (V3)...")
+
+		// Reset file position and attempt V3 parsing
+		if _, err := file.Seek(0, 0); err != nil {
+			return nil, fmt.Errorf("failed to reset file position: %w", err)
+		}
+
+		var mapDataV3 MapDataV3
+		if err := json.NewDecoder(file).Decode(&mapDataV3); err != nil {
+			return nil, fmt.Errorf("failed to parse as V3 format: %w", err)
+		}
+		return convertV3ToV2(&mapDataV3), nil
 	}
-	return &mapData, nil
+}
+
+func convertV3ToV2(mapV3 *MapDataV3) *MapData {
+	mapV2 := &MapData{
+		Version: mapV3.Version,
+		Notes:   make([]Note, len(mapV3.Notes)),
+		Events:  make([]Event, len(mapV3.Events)),
+	}
+
+	// Convert notes
+	for i, noteV3 := range mapV3.Notes {
+		mapV2.Notes[i] = Note{
+			Time:      noteV3.Time,
+			LineIndex: noteV3.LineIndex,
+			LineLayer: noteV3.LineLayer,
+			Type:      noteV3.Type,
+		}
+	}
+
+	// Convert events
+	for i, eventV3 := range mapV3.Events {
+		mapV2.Events[i] = Event{
+			Time:  eventV3.Time,
+			Type:  eventV3.Type,
+			Value: eventV3.Value,
+		}
+	}
+
+	return mapV2
 }
 
 func loadInfoData(filePath string) (*InfoDataTranslator, error) {
@@ -134,11 +248,12 @@ func checkRequiredMods(infoData *InfoDataTranslator) {
 type LightshowConverter struct {
 	BPMPerMillisecond float64
 	MapData           *MapData
-	Effects           []string
+	Effects           map[string][]string // Changed to map by element name
 	LastBlockTime     float64
 }
 
 func (c *LightshowConverter) GenerateLightshow() error {
+	c.Effects = make(map[string][]string)
 	c.processNotes()
 	c.processEvents()
 	return c.writeOutput()
@@ -155,9 +270,9 @@ func (c *LightshowConverter) processNotes() {
 		bindings := c.getBindingsForNote(note.Type, positionKey)
 
 		for _, binding := range bindings {
-			effect := fmt.Sprintf(`<Effect ref="0" name="On" selected="1" startTime="%d" endTime="%d" palette="1" node="%s"/>`,
-				startTime, startTime+LightBlinkDuration, binding)
-			c.Effects = append(c.Effects, effect)
+			effect := fmt.Sprintf(`        <Effect ref="0" name="On" startTime="%d" endTime="%d" palette="0"/>`,
+				startTime, startTime+LightBlinkDuration)
+			c.Effects[binding] = append(c.Effects[binding], effect)
 		}
 	}
 }
@@ -183,9 +298,9 @@ func (c *LightshowConverter) processEvents() {
 
 		bindings := c.getBindingsForEvent(event)
 		for _, binding := range bindings {
-			effect := fmt.Sprintf(`<Effect ref="0" name="On" selected="1" startTime="%d" endTime="%d" palette="1" node="%s"/>`,
-				startTime, endTime, binding)
-			c.Effects = append(c.Effects, effect)
+			effect := fmt.Sprintf(`        <Effect ref="0" name="On" startTime="%d" endTime="%d" palette="0"/>`,
+				startTime, endTime)
+			c.Effects[binding] = append(c.Effects[binding], effect)
 		}
 	}
 }
@@ -259,28 +374,44 @@ func (c *LightshowConverter) buildXMLContent() (string, error) {
 
 	// Apply template replacements
 	absPath, _ := filepath.Abs("LightshowOutput/lightshow.wav")
-	duration := fmt.Sprintf("%.1f", c.LastBlockTime/1000+SequenceBufferTime)
+	duration := fmt.Sprintf("%.3f", c.LastBlockTime/1000+SequenceBufferTime)
 
 	replacements := map[string]string{
-		"<sequenceType>":     "<sequenceType>Media</sequenceType><sequenceType>",
-		"<mediaFile>":        "<mediaFile>" + absPath + "</mediaFile><mediaFile>",
-		"<sequenceDuration>": "<sequenceDuration>" + duration + "</sequenceDuration><sequenceDuration>",
+		"MEDIA_FILE_PATH":   absPath,
+		"SEQUENCE_DURATION": duration,
 	}
 
 	for old, new := range replacements {
 		xmlContent = strings.Replace(xmlContent, old, new, 1)
 	}
 
-	// Add effects
-	for _, effect := range c.Effects {
-		xmlContent += effect + "\n"
+	// Add effects to their respective elements
+	for lightName, effects := range c.Effects {
+		if len(effects) > 0 {
+			// Find the element in the XML and replace its empty EffectLayer
+			elementPattern := fmt.Sprintf(`<Element type="model" name="%s">
+      <EffectLayer/>
+    </Element>`, lightName)
+
+			effectsContent := strings.Join(effects, "\n")
+			replacement := fmt.Sprintf(`<Element type="model" name="%s">
+      <EffectLayer>
+%s
+      </EffectLayer>
+    </Element>`, lightName, effectsContent)
+
+			xmlContent = strings.Replace(xmlContent, elementPattern, replacement, 1)
+		}
 	}
 
 	return xmlContent, nil
 }
 
-func convertSongToWav(beatSaberDir string) error {
-	eggPath := filepath.Join(beatSaberDir, "song.egg")
+func convertSongToWav(beatSaberDir string, songFileName string) error {
+	if songFileName == "" {
+		songFileName = "song.egg"
+	}
+	eggPath := filepath.Join(beatSaberDir, songFileName)
 
 	// Check if song.egg exists
 	if _, err := os.Stat(eggPath); os.IsNotExist(err) {

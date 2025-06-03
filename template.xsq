@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsequence BaseChannel="0" ChanCtrlBasic="0" ChanCtrlColor="0" FixedPointTiming="1" ModelBlending="true">
   <head>
-    <version>2021.40</version>
+    <version>2025.05</version>
     <author></author>
     <author-email></author-email>
     <author-website></author-website>
@@ -10,93 +10,324 @@
     <album></album>
     <MusicURL></MusicURL>
     <comment></comment>
-    <sequenceTiming>50 ms</sequenceTiming>
-    <sequenceType>Animation</sequenceType>
-    <mediaFile></mediaFile>
-    <sequenceDuration>30.000</sequenceDuration>
-    <imageDir></imageDir>
+    <sequenceTiming>20 ms</sequenceTiming>
+    <sequenceType>Media</sequenceType>
+    <mediaFile>MEDIA_FILE_PATH</mediaFile>
+    <sequenceDuration>SEQUENCE_DURATION</sequenceDuration>
+    <imageDir/>
   </head>
   <nextid>1</nextid>
   <Jukebox/>
   <ColorPalettes>
-    <ColorPalette>C_BUTTON_Palette1=#323233,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#fefcff,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#313132,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#4b4b4c,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#b1afb2,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#181819,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#e4e2e5,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#3e3e3f,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#bebcbf,C_CHECKBOX_Palette1=1</ColorPalette>
-    <ColorPalette>C_BUTTON_Palette1=#7e7d7f,C_CHECKBOX_Palette1=1</ColorPalette>
+    <ColorPalette>C_BUTTON_Palette1=#FFFFFF,C_BUTTON_Palette2=#FF0000,C_BUTTON_Palette3=#00FF00,C_BUTTON_Palette4=#0000FF,C_BUTTON_Palette5=#FFFF00,C_BUTTON_Palette6=#000000,C_BUTTON_Palette7=#00FFFF,C_BUTTON_Palette8=#FF00FF,C_CHECKBOX_Palette1=1,C_CHECKBOX_Palette2=1</ColorPalette>
   </ColorPalettes>
   <EffectDB>
     <Effect></Effect>
   </EffectDB>
   <DataLayers>
-    <DataLayer lor_params="506" channel_offset="0" num_channels="0" num_frames="0" data="&lt;rendered: erase-mode&gt;" source="&lt;auto-generated&gt;" name="Nutcracker"/>
+    <DataLayer lor_params="0" channel_offset="0" num_channels="0" num_frames="0" data="&lt;rendered: erase-mode&gt;" source="&lt;auto-generated&gt;" name="Nutcracker"/>
   </DataLayers>
   <DisplayElements>
-    <Element collapsed="0" type="timing" name="New Timing" visible="1" views="Master View" active="1"/>
-    <Element collapsed="0" type="model" name="Tesla Model S" visible="1"/>
+    <Element collapsed="0" type="timing" name="New Timing" visible="1" views="Master View,Old View,Group View,Multishow Import View" active="1"/>
+    <Element collapsed="0" type="model" name="All Interior RGB" visible="1"/>
+    <Element collapsed="0" type="model" name="Offroad Light Bar" visible="1"/>
+    <Element collapsed="0" type="model" name="Front Light Bar" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Channel 6" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Channel 5" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Channel 4" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Signatures" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Inner Main Beams" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Outer Main Beams" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Turns (Front)" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Side Markers" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Aux Park" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Fogs (Front)" visible="1"/>
+    <Element collapsed="0" type="model" name="Rear Light Bar" visible="1"/>
+    <Element collapsed="0" type="model" name="Brake Lights" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Tail Lights" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Turns (Rear)" visible="1"/>
+    <Element collapsed="0" type="model" name="Reverse Lights" visible="1"/>
+    <Element collapsed="0" type="model" name="Rear Fog Lights" visible="1"/>
+    <Element collapsed="0" type="model" name="License Plate" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Side Repeaters" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Doors (Front)" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Falcon Doors" visible="1"/>
+    <Element collapsed="0" type="model" name="Liftgate" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Mirrors" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Windows (Front)" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Windows (Rear)" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Door Handles (Front)" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Door Handles (Rear)" visible="1"/>
+    <Element collapsed="0" type="model" name="Charge Port" visible="1"/>
+    <Element collapsed="0" type="model" name="LR Front Light Bar" visible="1"/>
+    <Element collapsed="0" type="model" name="LR Rear Light Bar" visible="1"/>
+    <Element collapsed="0" type="model" name="GRP Tesla Model S" visible="1"/>
+    <Element collapsed="0" type="model" name="Left Tail" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Tail" visible="0"/>
+    <Element collapsed="0" type="model" name="Center Front Display" visible="0"/>
+    <Element collapsed="0" type="model" name="All Accent Lights" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Falcon Door" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Falcon Door" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Front Door" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Front Door" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Side Repeater" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Side Repeater" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Mirror" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Mirror" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Signature" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Signature" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Outer Main Beam" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Outer Main Beam" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Inner Main Beam" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Inner Main Beam" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Channel 4" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Channel 4" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Channel 5" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Channel 5" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Channel 6" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Channel 6" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Front Turn" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Front Turn" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Front Fog" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Front Fog" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Aux Park" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Aux Park" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Rear Turn" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Rear Turn" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Front Window" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Rear Window" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Front Window" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Rear Window" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Front Door Handle" visible="0"/>
+    <Element collapsed="0" type="model" name="Left Rear Door Handle" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Front Door Handle" visible="0"/>
+    <Element collapsed="0" type="model" name="Right Rear Door Handle" visible="0"/>
   </DisplayElements>
   <ElementEffects>
     <Element type="timing" name="New Timing">
       <EffectLayer/>
     </Element>
-    <Element type="model" name="Tesla Model S">
+    <Element type="model" name="All Interior RGB">
       <EffectLayer/>
-      <Strand index="0" name="All Lights and Closures">
-        <Node index="0" name="Left Outer Main Beam"></Node>
-        <Node index="1" name="Right Outer Main Beam"></Node>
-        <Node index="2" name="Left Inner Main Beam"></Node>
-        <Node index="3" name="Right Inner Main Beam"></Node>
-        <Node index="4" name="Left Signature"></Node>
-        <Node index="5" name="Right Signature"> </Node>
-        <Node index="6" name="Left Channel 4"></Node>
-        <Node index="7" name="Right Channel 4"></Node>
-        <Node index="8" name="Left Channel 5"></Node>
-        <Node index="9" name="Right Channel 5"></Node>
-        <Node index="10" name="Left Channel 6"></Node>
-        <Node index="11" name="Right Channel 6"></Node>
-        <Node index="12" name="Left Front Turn"></Node>
-        <Node index="13" name="Right Front Turn"></Node>
-        <Node index="14" name="Left Front Fog"></Node>
-        <Node index="15" name="Right Front Fog"></Node>
-        <Node index="16" name="Left Aux Park"></Node>
-        <Node index="17" name="Right Aux Park"></Node>
-        <Node index="18" name="Left Side Marker"></Node>
-        <Node index="19" name="Right Side Marker"></Node>
-        <Node index="20" name="Left Side Repeater"></Node>
-        <Node index="21" name="Right Side Repeater"></Node>
-        <Node index="22" name="Left Rear Turn"></Node>
-        <Node index="23" name="Right Rear Turn"></Node>
-        <Node index="24" name="Brake Lights"></Node>
-        <Node index="25" name="Left Tail"></Node>
-        <Node index="26" name="Right Tail"></Node>
-        <Node index="27" name="Reverse Lights"></Node>
-        <Node index="28" name="Rear Fog Lights"></Node>
-        <Node index="29" name="License Plate"></Node>
-        <Node index="30" name="Left Falcon Door"></Node>
-        <Node index="31" name="Right Falcon Door"></Node>
-        <Node index="32" name="Left Front Door"></Node>
-        <Node index="33" name="Right Front Door"></Node>
-        <Node index="34" name="Left Mirror"></Node>
-        <Node index="35" name="Right Mirror"></Node>
-        <Node index="36" name="Left Front Window"></Node>
-        <Node index="37" name="Left Rear Window"></Node>
-        <Node index="38" name="Right Front Window"></Node>
-        <Node index="39" name="Right Rear Window"></Node>
-        <Node index="40" name="Liftgate"></Node>
-        <Node index="41" name="Left Front Door Handle"></Node>
-        <Node index="42" name="Left Rear Door Handle"></Node>
-        <Node index="43" name="Right Front Door Handle"></Node>
-        <Node index="44" name="Rear Rear Door Handle"></Node>
-        <Node index="45" name="Charge Port"></Node>
-      </Strand>
+    </Element>
+    <Element type="model" name="Offroad Light Bar">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Front Light Bar">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Channel 6">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Channel 5">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Channel 4">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Signatures">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Inner Main Beams">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Outer Main Beams">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Turns (Front)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Side Markers">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Aux Park">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Fogs (Front)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Rear Light Bar">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Brake Lights">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Tail Lights">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Turns (Rear)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Reverse Lights">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Rear Fog Lights">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="License Plate">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Side Repeaters">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Doors (Front)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Falcon Doors">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Liftgate">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Mirrors">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Windows (Front)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Windows (Rear)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Door Handles (Front)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Door Handles (Rear)">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Charge Port">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="LR Front Light Bar">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="LR Rear Light Bar">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="GRP Tesla Model S">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Tail">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Tail">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Center Front Display">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="All Accent Lights">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Falcon Door">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Falcon Door">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Front Door">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Front Door">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Side Repeater">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Side Repeater">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Mirror">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Mirror">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Signature">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Signature">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Outer Main Beam">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Outer Main Beam">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Inner Main Beam">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Inner Main Beam">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Channel 4">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Channel 4">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Channel 5">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Channel 5">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Channel 6">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Channel 6">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Front Turn">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Front Turn">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Front Fog">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Front Fog">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Aux Park">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Aux Park">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Rear Turn">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Rear Turn">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Front Window">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Rear Window">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Front Window">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Rear Window">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Front Door Handle">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Left Rear Door Handle">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Front Door Handle">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Rear Door Handle">
+      <EffectLayer/>
     </Element>
   </ElementEffects>
-  <lastView>0</lastView>
+  <lastView>1</lastView>
   <TimingTags>
     <Tag number="0" position="-1"/>
     <Tag number="1" position="-1"/>
