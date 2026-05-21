@@ -121,3 +121,8 @@ dmypy.json
 
 # idfk what this is, but i don't like
 .DS_Store
+
+# Node/Vite specific
+node_modules/
+dist/
+.vite/

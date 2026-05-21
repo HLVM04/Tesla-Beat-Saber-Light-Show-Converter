@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="shadcn">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tesla Light Show Converter — Beat Saber Maps to Tesla Sequence</title>
+    <meta name="description" content="Completely free client-side tool to convert Beat Saber map files into physical Tesla Light Shows using your browser." />
+  </head>
+  <body class="min-h-screen flex flex-col antialiased selection:bg-neutral/20">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-base-300 bg-base-100/80 backdrop-blur-md">
+      <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl font-extrabold tracking-tight select-none">⚡ TESLA<span class="font-normal text-muted-foreground">LIGHTSHOW</span></span>
+          <div class="badge badge-outline border-base-300 text-[10px] uppercase font-mono px-1.5 py-0.5">v2.0 Client</div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <!-- Theme Toggle -->
+          <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
+            <input type="checkbox" id="theme-toggle" />
+            <!-- Sun Icon -->
+            <svg class="swap-on fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
+            <!-- Moon Icon -->
+            <svg class="swap-off fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.14,21.87a8.48,8.48,0,0,1-.18-16.89,1,1,0,0,0-1-1,1,1,0,0,0-1,1.1,10.6,10.6,0,0,0,7.07,9.57,9.45,9.45,0,0,0,3.31.59,1,1,0,0,0,.76-1.63,10,10,0,0,1-9.14-11.72,1,1,0,0,0-.78-1.18,1,1,0,0,0-1.18.78,12,12,0,1,0,13.78,16.2,1,1,0,0,0-1.28-1.2A10.43,10.43,0,0,1,12.14,21.87Z"/></svg>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Body -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl flex flex-col gap-8">
+      
+      <!-- Intro Section -->
+      <section class="text-center space-y-3">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Convert Beat Saber Maps<br/>into Tesla Light Shows</h1>
+        <p class="text-muted-foreground text-sm max-w-md mx-auto">
+          Recreate your favorite maps on your car! Processes entirely inside your browser. No files are uploaded to any server.
+        </p>
+      </section>
+
+      <!-- Main Workspace Card -->
+      <div class="card bg-base-100 border border-base-300 shadow-sm overflow-hidden">
+        <div class="card-body p-6 flex flex-col gap-6">
+          
+          <!-- State 1: Drop & Drag Zone -->
+          <div id="drop-zone" class="border-2 border-dashed border-base-300 rounded-lg p-10 flex flex-col items-center justify-center gap-4 transition-all duration-200 cursor-pointer hover:border-accent bg-base-200/50 hover:bg-base-200">
+            <input type="file" id="zip-input" accept=".zip" class="hidden" />
+            <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
+            
+            <div class="p-4 bg-base-100 rounded-full border border-base-300 shadow-sm pulse-hover">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            </div>
+            
+            <div class="text-center">
+              <p class="font-medium text-sm">Drag & drop your beatmap ZIP or directory</p>
+              <p class="text-xs text-muted-foreground mt-1">Accepts map archive .zip or extracted song folders</p>
+            </div>
+            
+            <div class="flex items-center gap-2 mt-2">
+              <button id="btn-browse-zip" class="btn btn-sm btn-outline border-base-300 text-xs">Browse ZIP</button>
+              <span class="text-[10px] text-muted-foreground uppercase font-mono">or</span>
+              <button id="btn-browse-folder" class="btn btn-sm btn-outline border-base-300 text-xs">Browse Folder</button>
+            </div>
+          </div>
+
+          <!-- State 2: Selected Map Information Card (Hidden initially) -->
+          <div id="map-info-card" class="hidden border border-base-300 rounded-lg p-4 bg-base-200/20 flex flex-col md:flex-row gap-4 items-start">
+            <div class="w-24 h-24 rounded bg-base-200 border border-base-300 overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img id="cover-preview" src="" class="w-full h-full object-cover hidden" />
+              <div id="cover-placeholder" class="text-2xl text-muted-foreground font-semibold">🎵</div>
+            </div>
+            
+            <div class="flex-grow flex flex-col justify-between self-stretch gap-2">
+              <div>
+                <h3 id="song-title" class="font-bold text-base leading-tight">Song Name</h3>
+                <p id="song-sub" class="text-xs text-muted-foreground leading-tight mt-0.5">Subname</p>
+                <p id="song-artist" class="text-xs font-medium mt-1">Artist Name</p>
+              </div>
+              
+              <div class="flex flex-wrap items-center gap-3 text-xs font-mono text-muted-foreground mt-2">
+                <span id="map-bpm" class="badge badge-neutral px-2 py-0.5 font-sans font-medium text-[11px]">BPM: 0</span>
+                <span id="map-version-badge" class="border border-base-300 px-1.5 py-0.5 rounded text-[10px]">Format: v0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- State 3: Configuration Zone (Hidden initially) -->
+          <div id="config-zone" class="hidden flex flex-col gap-4">
+            <div class="divider my-0 border-base-200"></div>
+            
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Map Difficulty</label>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <select id="difficulty-select" class="select select-bordered select-sm flex-grow font-sans text-sm focus:outline-none">
+                  <!-- Dynamically populated -->
+                </select>
+                <button id="btn-convert" class="btn btn-sm btn-primary px-6">
+                  Generate Light Show
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- State 4: Progress Log Zone (Hidden initially) -->
+          <div id="log-zone" class="hidden flex flex-col gap-2">
+            <div class="divider my-0 border-base-200"></div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Log Output</span>
+              <div id="process-loader" class="loading loading-spinner loading-xs hidden"></div>
+            </div>
+            
+            <div id="console-output" class="bg-base-200 text-base-content border border-base-300 rounded-lg p-3 font-mono text-xs overflow-y-auto max-h-48 flex flex-col gap-1 leading-relaxed shadow-inner">
+              <!-- Dynamically populated logs -->
+            </div>
+          </div>
+
+          <!-- State 5: Success & Download Panel (Hidden initially) -->
+          <div id="download-zone" class="hidden flex flex-col gap-4">
+            <div class="divider my-0 border-base-200"></div>
+            
+            <div class="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center space-y-3">
+              <div class="text-xl">🎉</div>
+              <h4 class="font-bold text-sm">Light Show Map Generated!</h4>
+              <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+                All map notes and light events have been successfully compiled to physical Tesla compatible commands.
+              </p>
+              
+              <div class="pt-2 flex flex-col gap-2 max-w-xs mx-auto">
+                <button id="btn-download-bundle" class="btn btn-sm btn-primary w-full gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                  Download Bundle ZIP
+                </button>
+                <div class="flex gap-2">
+                  <button id="btn-download-xsq" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
+                    lightshow.xsq
+                  </button>
+                  <button id="btn-download-wav" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
+                    lightshow.wav
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FAQ / Steps Section -->
+      <section class="space-y-4">
+        <h2 class="text-xl font-bold tracking-tight text-center">How to Run it in Your Tesla</h2>
+        
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="card border border-base-300 bg-base-200/10">
+            <div class="card-body p-4 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold font-mono">1</span>
+                <span class="font-bold text-sm">Save in xLights</span>
+              </div>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                Open `lightshow.xsq` inside the **xLights** software. Verify that `lightshow.wav` is loaded as media and save it.
+              </p>
+            </div>
+          </div>
+          
+          <div class="card border border-base-300 bg-base-200/10">
+            <div class="card-body p-4 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold font-mono">2</span>
+                <span class="font-bold text-sm">Export Sequence</span>
+              </div>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                Export the sequence in xLights to get your **`lightshow.fseq`** file (which contains the binary commands for the lights).
+              </p>
+            </div>
+          </div>
+          
+          <div class="card border border-base-300 bg-base-200/10">
+            <div class="card-body p-4 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold font-mono">3</span>
+                <span class="font-bold text-sm">Plug & Play</span>
+              </div>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                Copy `lightshow.fseq` and `lightshow.wav` (renamed to `lightshow.mp3` if needed) into a folder named **`LightShow`** at the root of a USB flash drive, plug it into your car, and start the Show!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-base-300 py-6 mt-12 bg-base-200/30 text-center">
+      <div class="container mx-auto px-4 flex flex-col gap-2">
+        <p class="text-xs text-muted-foreground font-mono">
+          Handcrafted in TypeScript & Bun. Preserving 100% user data privacy.
+        </p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
