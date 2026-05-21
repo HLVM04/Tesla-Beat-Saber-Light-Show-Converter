@@ -146,12 +146,17 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                   Download Bundle ZIP
                 </button>
-                <div class="flex gap-2">
-                  <button id="btn-download-xsq" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
-                    lightshow.xsq
-                  </button>
-                  <button id="btn-download-wav" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
-                    lightshow.wav
+                <div class="flex flex-col gap-2 w-full">
+                  <div class="flex gap-2 w-full">
+                    <button id="btn-download-fseq" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
+                      lightshow.fseq
+                    </button>
+                    <button id="btn-download-wav" class="btn btn-sm btn-outline border-base-300 flex-grow text-xs font-mono">
+                      lightshow.wav
+                    </button>
+                  </div>
+                  <button id="btn-download-xsq" class="btn btn-xs btn-link text-muted-foreground/60 hover:text-muted-foreground text-[10px] self-center">
+                    Download xLights .xsq (Advanced)
                   </button>
                 </div>
               </div>
@@ -284,10 +289,10 @@
             <div class="card-body p-4 gap-2">
               <div class="flex items-center gap-2">
                 <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold font-mono">1</span>
-                <span class="font-bold text-sm">Save in xLights</span>
+                <span class="font-bold text-sm">Download ZIP Bundle</span>
               </div>
               <p class="text-xs text-muted-foreground leading-relaxed">
-                Open `lightshow.xsq` inside the **xLights** software. Verify that `lightshow.wav` is loaded as media and save it.
+                Generate and download the **Bundle ZIP** containing the ready-to-play **`lightshow.fseq`** and **`lightshow.wav`** files directly.
               </p>
             </div>
           </div>
@@ -296,10 +301,10 @@
             <div class="card-body p-4 gap-2">
               <div class="flex items-center gap-2">
                 <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold font-mono">2</span>
-                <span class="font-bold text-sm">Export Sequence</span>
+                <span class="font-bold text-sm">Copy to USB</span>
               </div>
               <p class="text-xs text-muted-foreground leading-relaxed">
-                Export the sequence in xLights to get your **`lightshow.fseq`** file (which contains the binary commands for the lights).
+                Extract the files and copy them into a folder named **`LightShow`** at the root of a USB flash drive (formatted as FAT32 or exFAT).
               </p>
             </div>
           </div>
@@ -311,7 +316,7 @@
                 <span class="font-bold text-sm">Plug & Play</span>
               </div>
               <p class="text-xs text-muted-foreground leading-relaxed">
-                Copy `lightshow.fseq` and `lightshow.wav` (renamed to `lightshow.mp3` if needed) into a folder named **`LightShow`** at the root of a USB flash drive, plug it into your car, and start the Show!
+                Plug the USB drive into your Tesla, open the Toybox, select Light Show, step out of the car, and enjoy the show!
               </p>
             </div>
           </div>

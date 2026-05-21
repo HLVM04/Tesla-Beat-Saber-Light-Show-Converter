@@ -154,6 +154,147 @@ export class LightshowConverter {
     return this.buildXMLContent();
   }
 
+  public generateFseq(): Uint8Array {
+    // If effectsData hasn't been built yet, build it
+    if (!this.effectsData || Object.keys(this.effectsData).length === 0) {
+      this.effects = {};
+      this.effectsData = {};
+      this.lastBlockTime = 0;
+      this.processNotes();
+      this.processEvents();
+    }
+
+    const durationMs = this.lastBlockTime + SequenceBufferTime * 1000;
+    const stepTimeMs = 20;
+    const channelCount = 200;
+    const frameCount = Math.ceil(durationMs / stepTimeMs);
+    const headerSize = 32;
+    const bufferSize = headerSize + channelCount * frameCount;
+    const buffer = new Uint8Array(bufferSize);
+    const view = new DataView(buffer.buffer);
+
+    // 0-3: Magic 'PSEQ'
+    buffer[0] = 0x50; // 'P'
+    buffer[1] = 0x53; // 'S'
+    buffer[2] = 0x45; // 'E'
+    buffer[3] = 0x51; // 'Q'
+
+    // 4-5: Channel data start offset (32)
+    view.setUint16(4, headerSize, true);
+
+    // 6: Minor version (0)
+    buffer[6] = 0;
+    // 7: Major version (2)
+    buffer[7] = 2;
+
+    // 8-9: Header size (32)
+    view.setUint16(8, headerSize, true);
+
+    // 10-13: Channel count (200)
+    view.setUint32(10, channelCount, true);
+
+    // 14-17: Frame count
+    view.setUint32(14, frameCount, true);
+
+    // 18: Step time in ms (20)
+    buffer[18] = stepTimeMs;
+
+    // 19: Flags (0)
+    buffer[19] = 0;
+
+    // 20: Compression type (0 - uncompressed)
+    buffer[20] = 0;
+
+    // 21: Compression blocks (0)
+    buffer[21] = 0;
+
+    // 22: Sparse ranges (0)
+    buffer[22] = 0;
+
+    // 23: Reserved (0)
+    buffer[23] = 0;
+
+    // 24-31: Unique identifier UUID (8 bytes)
+    const uuid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+    for (let i = 0; i < 8; i++) {
+      buffer[24 + i] = uuid[i];
+    }
+
+    // Map light names to 1-based FSEQ channel numbers
+    const nameToChannel: Record<string, number> = {
+      "Left Outer Main Beam": 1,
+      "Right Outer Main Beam": 2,
+      "Left Inner Main Beam": 3,
+      "Right Inner Main Beam": 4,
+      "Left Signature": 5,
+      "Right Signature": 6,
+      "Left Channel 4": 7,
+      "Right Channel 4": 8,
+      "Left Channel 5": 9,
+      "Right Channel 5": 10,
+      "Left Channel 6": 11,
+      "Right Channel 6": 12,
+      "Left Front Turn": 13,
+      "Right Front Turn": 14,
+      "Left Front Fog": 15,
+      "Right Front Fog": 16,
+      "Left Aux Park": 17,
+      "Right Aux Park": 18,
+      "Left Side Marker": 19,
+      "Right Side Marker": 20,
+      "Left Side Repeater": 21,
+      "Right Side Repeater": 22,
+      "Left Rear Turn": 23,
+      "Right Rear Turn": 24,
+      "Brake Lights": 25,
+      "Left Tail": 26,
+      "Right Tail": 27,
+      "Reverse Lights": 28,
+      "Rear Fog Lights": 29,
+      "License Plate": 30,
+      "Left Falcon Door": 31,
+      "Right Falcon Door": 32,
+      "Left Front Door": 33,
+      "Right Front Door": 34,
+      "Left Mirror": 35,
+      "Right Mirror": 36,
+      "Left Front Window": 37,
+      "Left Rear Window": 38,
+      "Right Front Window": 39,
+      "Right Rear Window": 40,
+      "Liftgate": 41,
+      "Left Front Door Handle": 42,
+      "Left Rear Door Handle": 43,
+      "Right Front Door Handle": 44,
+      "Right Rear Door Handle": 45,
+      "Charge Port": 46,
+      "Front Light Bar": 47,
+    };
+
+    // Populate frame channel data (starts at offset 32)
+    for (let f = 0; f < frameCount; f++) {
+      const t = f * stepTimeMs;
+      const frameStartOffset = headerSize + f * channelCount;
+
+      for (const [lightName, effects] of Object.entries(this.effectsData)) {
+        const channelIndex = nameToChannel[lightName];
+        if (channelIndex === undefined) continue;
+
+        // Check if any effect overlaps timestamp t
+        const isActive = effects.some(
+          (effect) => effect.startTime <= t && t < effect.endTime
+        );
+
+        if (isActive) {
+          buffer[frameStartOffset + (channelIndex - 1)] = 0xFF;
+        }
+      }
+    }
+
+    return buffer;
+  }
+
+
   public getLightEffects(): Record<string, LightEffect[]> {
     return this.effectsData;
   }

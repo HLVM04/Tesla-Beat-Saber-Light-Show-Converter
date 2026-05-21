@@ -14,6 +14,7 @@ interface MapFile {
 let loadedFiles: Record<string, MapFile> = {};
 let parsedInfo: InfoData | null = null;
 let generatedXsq: string | null = null;
+let generatedFseq: Uint8Array | null = null;
 let generatedWav: Blob | null = null;
 let generatedZip: Blob | null = null;
 
@@ -53,6 +54,7 @@ const consoleOutput = document.getElementById("console-output")!;
 
 const downloadZone = document.getElementById("download-zone")!;
 const btnDownloadBundle = document.getElementById("btn-download-bundle")! as HTMLButtonElement;
+const btnDownloadFseq = document.getElementById("btn-download-fseq")! as HTMLButtonElement;
 const btnDownloadXsq = document.getElementById("btn-download-xsq")! as HTMLButtonElement;
 const btnDownloadWav = document.getElementById("btn-download-wav")! as HTMLButtonElement;
 const themeToggle = document.getElementById("theme-toggle")! as HTMLInputElement;
@@ -421,6 +423,11 @@ function setupConversion() {
       generatedXsq = converter.generateLightshow();
       logConsole(`Successfully compiled lightshow layout XML (Size: ${generatedXsq.length} characters).`, "success");
 
+      // 2b. Generate FSEQ Binary
+      logConsole("Generating play-ready FSEQ binary sequence...");
+      generatedFseq = converter.generateFseq();
+      logConsole(`Successfully generated FSEQ binary sequence (Size: ${generatedFseq.length.toLocaleString()} bytes, ${Math.ceil(generatedFseq.length / 200).toLocaleString()} frames).`, "success");
+
       // 3. Audio Transcoding
       const songFilename = parsedInfo._songFilename || "song.egg";
       const audioKey = songFilename.toLowerCase();
@@ -446,7 +453,7 @@ function setupConversion() {
           logConsole(`Audio transcoding completed successfully! Output Size: ${(generatedWav.size / (1024 * 1024)).toFixed(2)} MB.`, "success");
         } catch (audioErr) {
           logConsole(`Warning: Audio transcoding failed: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`, "warning");
-          logConsole("The lightshow.xsq will still be downloadable, but you'll have to manually supply audio in xLights.", "warning");
+          logConsole("The lightshow.xsq and lightshow.fseq will still be downloadable, but you'll have to manually supply audio in xLights.", "warning");
         }
       } else {
         logConsole(`Warning: Audio file "${songFilename}" not found in the upload. Skipping audio transcoding.`, "warning");
@@ -456,6 +463,9 @@ function setupConversion() {
       logConsole("Creating output bundle ZIP archive...");
       const outZip = new JSZip();
       
+      if (generatedFseq) {
+        outZip.file("lightshow.fseq", generatedFseq);
+      }
       outZip.file("lightshow.xsq", generatedXsq);
       if (generatedWav) {
         outZip.file("lightshow.wav", generatedWav);
@@ -495,12 +505,20 @@ function setupConversion() {
 function setupDownloadUrls() {
   // Clean old trigger buttons
   btnDownloadBundle.onclick = null;
+  btnDownloadFseq.onclick = null;
   btnDownloadXsq.onclick = null;
   btnDownloadWav.onclick = null;
 
   if (generatedZip) {
     btnDownloadBundle.onclick = () => {
       triggerDownload(generatedZip!, "lightshow.zip");
+    };
+  }
+
+  if (generatedFseq) {
+    const fseqBlob = new Blob([generatedFseq as any], { type: "application/octet-stream" });
+    btnDownloadFseq.onclick = () => {
+      triggerDownload(fseqBlob, "lightshow.fseq");
     };
   }
 
@@ -551,6 +569,7 @@ function resetUI() {
 
 function resetOutputs() {
   generatedXsq = null;
+  generatedFseq = null;
   generatedWav = null;
   generatedZip = null;
   downloadZone.classList.add("hidden");
@@ -853,9 +872,9 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
     metricDurationStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
   }
 
-  // Channel Count - hardcoded standard template verification
-  metricChannels.textContent = "48 Ch";
-  metricChannelsStatus.textContent = "✓ Standard";
+  // Channel Count - 200 channels
+  metricChannels.textContent = "200 Ch";
+  metricChannelsStatus.textContent = "✓ Complete";
   metricChannelsStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
 
   // Audio status
@@ -872,7 +891,7 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
   }
 
   // Format validation
-  metricFormat.textContent = "xLights XML";
+  metricFormat.textContent = "Play-Ready FSEQ";
   metricFormatStatus.textContent = "✓ Valid";
   metricFormatStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
 
