@@ -158,6 +158,14 @@ export class LightshowConverter {
     return this.effectsData;
   }
 
+  public getTotalEffectsCount(): number {
+    let count = 0;
+    for (const effects of Object.values(this.effectsData)) {
+      count += effects.length;
+    }
+    return count;
+  }
+
   public getDurationSeconds(): number {
     return this.lastBlockTime / 1000 + SequenceBufferTime;
   }

@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tesla Light Show Converter — Beat Saber Maps to Tesla Sequence</title>
     <meta name="description" content="Completely free client-side tool to convert Beat Saber map files into physical Tesla Light Shows using your browser." />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      (function() {
+        const savedTheme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (savedTheme === "shadcn-dark" || (!savedTheme && prefersDark)) {
+          document.documentElement.setAttribute("data-theme", "shadcn-dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "shadcn");
+        }
+      })();
+    </script>
   </head>
   <body class="min-h-screen flex flex-col antialiased selection:bg-neutral/20">
     <!-- Header -->
@@ -21,9 +33,9 @@
           <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
             <input type="checkbox" id="theme-toggle" />
             <!-- Sun Icon -->
-            <svg class="swap-on fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
+            <svg class="swap-on fill-current w-4 h-4" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
             <!-- Moon Icon -->
-            <svg class="swap-off fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.14,21.87a8.48,8.48,0,0,1-.18-16.89,1,1,0,0,0-1-1,1,1,0,0,0-1,1.1,10.6,10.6,0,0,0,7.07,9.57,9.45,9.45,0,0,0,3.31.59,1,1,0,0,0,.76-1.63,10,10,0,0,1-9.14-11.72,1,1,0,0,0-.78-1.18,1,1,0,0,0-1.18.78,12,12,0,1,0,13.78,16.2,1,1,0,0,0-1.28-1.2A10.43,10.43,0,0,1,12.14,21.87Z"/></svg>
+            <svg class="swap-off fill-current w-4 h-4" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.14,21.87a8.48,8.48,0,0,1-.18-16.89,1,1,0,0,0-1-1,1,1,0,0,0-1,1.1,10.6,10.6,0,0,0,7.07,9.57,9.45,9.45,0,0,0,3.31.59,1,1,0,0,0,.76-1.63,10,10,0,0,1-9.14-11.72,1,1,0,0,0-.78-1.18,1,1,0,0,0-1.18.78,12,12,0,1,0,13.78,16.2,1,1,0,0,0-1.28-1.2A10.43,10.43,0,0,1,12.14,21.87Z"/></svg>
           </label>
         </div>
       </div>
@@ -144,6 +156,60 @@
                 </div>
               </div>
             </div>
+
+            <!-- Validation Report Card -->
+            <div class="border border-base-300 rounded-lg p-4 bg-base-200/20 space-y-4">
+              <div class="flex items-center justify-between">
+                <h5 class="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                  Tesla Compatibility Validator
+                </h5>
+                <div id="validator-status-badge" class="badge badge-success badge-sm font-bold gap-1 text-[10px] px-2 py-1 uppercase rounded tracking-wider">Pass</div>
+              </div>
+
+              <!-- Memory Budget Slider -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs font-medium">
+                  <span class="text-muted-foreground">Sequence Memory Usage</span>
+                  <span id="validator-command-ratio" class="font-mono text-xs">0 / 3,500 commands (0%)</span>
+                </div>
+                <div class="w-full bg-base-300 h-2.5 rounded-full overflow-hidden">
+                  <div id="validator-command-progress" class="bg-success h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Quick Metrics Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="flex flex-col p-2.5 bg-base-100 rounded border border-base-300/60 shadow-sm">
+                  <span class="text-[9px] uppercase font-bold text-muted-foreground leading-none tracking-wider">Duration</span>
+                  <span id="validator-metric-duration" class="text-xs font-bold mt-1.5">0:00</span>
+                  <span id="validator-metric-duration-status" class="text-[9px] text-success font-medium mt-1 flex items-center gap-0.5">✓ Safe</span>
+                </div>
+
+                <div class="flex flex-col p-2.5 bg-base-100 rounded border border-base-300/60 shadow-sm">
+                  <span class="text-[9px] uppercase font-bold text-muted-foreground leading-none tracking-wider">Channels</span>
+                  <span id="validator-metric-channels" class="text-xs font-bold mt-1.5">48 Ch</span>
+                  <span id="validator-metric-channels-status" class="text-[9px] text-success font-medium mt-1 flex items-center gap-0.5">✓ Standard</span>
+                </div>
+
+                <div class="flex flex-col p-2.5 bg-base-100 rounded border border-base-300/60 shadow-sm">
+                  <span class="text-[9px] uppercase font-bold text-muted-foreground leading-none tracking-wider">Audio Media</span>
+                  <span id="validator-metric-audio" class="text-xs font-bold mt-1.5 truncate">WAV Audio</span>
+                  <span id="validator-metric-audio-status" class="text-[9px] text-success font-medium mt-1 flex items-center gap-0.5">✓ OK</span>
+                </div>
+
+                <div class="flex flex-col p-2.5 bg-base-100 rounded border border-base-300/60 shadow-sm">
+                  <span class="text-[9px] uppercase font-bold text-muted-foreground leading-none tracking-wider">Sequence format</span>
+                  <span id="validator-metric-format" class="text-xs font-bold mt-1.5">xLights XML</span>
+                  <span id="validator-metric-format-status" class="text-[9px] text-success font-medium mt-1 flex items-center gap-0.5">✓ Valid</span>
+                </div>
+              </div>
+
+              <!-- Warnings Container (Hidden unless warnings exist) -->
+              <div id="validator-warnings" class="hidden text-xs space-y-1.5 p-3 rounded bg-warning/5 border border-warning/20 text-warning-content font-medium">
+                <!-- Dynamically populated issues/warnings -->
+              </div>
+            </div>
           </div>
 
           <!-- State 6: 3D Visualizer Panel (Hidden initially) -->
@@ -181,16 +247,16 @@
                   <div class="flex items-center gap-2.5">
                     <button id="btn-play-pause" class="btn btn-circle btn-primary btn-sm w-9 h-9" aria-label="Play/Pause">
                       <!-- Play Icon -->
-                      <svg id="icon-play" class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      <svg id="icon-play" class="w-4 h-4 fill-current" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                       <!-- Pause Icon (hidden by default) -->
-                      <svg id="icon-pause" class="w-4 h-4 fill-current hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      <svg id="icon-pause" class="w-4 h-4 fill-current hidden" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
                     
                     <button id="btn-mute" class="btn btn-circle btn-ghost btn-sm w-8 h-8" aria-label="Mute/Unmute">
                       <!-- Speaker High Icon -->
-                      <svg id="icon-volume-on" class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                      <svg id="icon-volume-on" class="w-4 h-4 fill-current" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                       <!-- Mute Icon (hidden by default) -->
-                      <svg id="icon-volume-off" class="w-4 h-4 fill-current hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                      <svg id="icon-volume-off" class="w-4 h-4 fill-current hidden" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
                     </button>
                   </div>
 

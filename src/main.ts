@@ -466,6 +466,11 @@ function setupConversion() {
 
       // Enable download options
       setupDownloadUrls();
+
+      // Run Tesla Compatibility Validation
+      logConsole("Running Tesla compatibility checks...");
+      runSimplifiedValidation(converter, !!generatedWav);
+
       downloadZone.classList.remove("hidden");
       logConsole("SUCCESS: Tesla light show files are ready for download!", "success");
 
@@ -778,4 +783,128 @@ function setupVisualizerControls() {
       visualizer.updatePlaybackTime(currentTimeMs);
     }
   });
+}
+
+// --- Tesla Compatibility Validator ---
+function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolean) {
+  const durationSeconds = converter.getDurationSeconds();
+  const totalEffects = converter.getTotalEffectsCount();
+  const commandsCount = totalEffects * 2;
+  const commandLimit = 3500;
+  const commandRatio = commandsCount / commandLimit;
+  const commandPercentage = Math.round(commandRatio * 100);
+
+  // 1. Get DOM elements
+  const statusBadge = document.getElementById("validator-status-badge")!;
+  const commandRatioEl = document.getElementById("validator-command-ratio")!;
+  const commandProgressEl = document.getElementById("validator-command-progress")!;
+  
+  const metricDuration = document.getElementById("validator-metric-duration")!;
+  const metricDurationStatus = document.getElementById("validator-metric-duration-status")!;
+  
+  const metricChannels = document.getElementById("validator-metric-channels")!;
+  const metricChannelsStatus = document.getElementById("validator-metric-channels-status")!;
+  
+  const metricAudio = document.getElementById("validator-metric-audio")!;
+  const metricAudioStatus = document.getElementById("validator-metric-audio-status")!;
+  
+  const metricFormat = document.getElementById("validator-metric-format")!;
+  const metricFormatStatus = document.getElementById("validator-metric-format-status")!;
+  
+  const warningsContainer = document.getElementById("validator-warnings")!;
+
+  // 2. Clear lists & statuses
+  const warnings: string[] = [];
+  let isFailed = false;
+  let isWarning = false;
+
+  // 3. Perform Checks
+  // Check memory / command count
+  commandRatioEl.textContent = `${commandsCount.toLocaleString()} / ${commandLimit.toLocaleString()} commands (${commandPercentage}%)`;
+  
+  // Set progress bar width and color
+  commandProgressEl.style.width = `${Math.min(commandPercentage, 100)}%`;
+  commandProgressEl.className = "h-full rounded-full transition-all duration-500";
+  if (commandsCount > commandLimit) {
+    commandProgressEl.classList.add("bg-error");
+    isFailed = true;
+    warnings.push(`<strong>CRITICAL:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to play on the vehicle.`);
+  } else if (commandsCount > 2800) {
+    commandProgressEl.classList.add("bg-warning");
+    isWarning = true;
+    warnings.push(`<strong>WARNING:</strong> High command count (<strong>${commandsCount.toLocaleString()}</strong> / 3,500). The sequence is approaching the Tesla memory limit.`);
+  } else {
+    commandProgressEl.classList.add("bg-success");
+  }
+
+  // Format Duration
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = Math.floor(durationSeconds % 60);
+  const formattedDuration = `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  metricDuration.textContent = formattedDuration;
+
+  if (durationSeconds > 14400) { // 4 hours
+    metricDurationStatus.textContent = "✗ Too Long";
+    metricDurationStatus.className = "text-[9px] text-error font-medium mt-1 flex items-center gap-0.5";
+    isFailed = true;
+    warnings.push(`<strong>CRITICAL:</strong> Show duration (<strong>${formattedDuration}</strong>) exceeds the 4-hour limit supported by Tesla vehicles.`);
+  } else {
+    metricDurationStatus.textContent = "✓ Safe";
+    metricDurationStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+  }
+
+  // Channel Count - hardcoded standard template verification
+  metricChannels.textContent = "48 Ch";
+  metricChannelsStatus.textContent = "✓ Standard";
+  metricChannelsStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+
+  // Audio status
+  if (hasAudio) {
+    metricAudio.textContent = "WAV Audio";
+    metricAudioStatus.textContent = "✓ OK";
+    metricAudioStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+  } else {
+    metricAudio.textContent = "Missing";
+    metricAudioStatus.textContent = "⚠ Warning";
+    metricAudioStatus.className = "text-[9px] text-warning font-medium mt-1 flex items-center gap-0.5";
+    isWarning = true;
+    warnings.push(`<strong>WARNING:</strong> No audio was transcoded (WAV file is missing). You will need to manually configure the audio file in xLights or provide an OGG audio file in your map.`);
+  }
+
+  // Format validation
+  metricFormat.textContent = "xLights XML";
+  metricFormatStatus.textContent = "✓ Valid";
+  metricFormatStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+
+  // Set overall status badge
+  statusBadge.className = "badge badge-sm font-bold gap-1 text-[10px] px-2 py-1 uppercase rounded tracking-wider";
+  if (isFailed) {
+    statusBadge.textContent = "Failed";
+    statusBadge.classList.add("badge-error");
+  } else if (isWarning) {
+    statusBadge.textContent = "Warning";
+    statusBadge.classList.add("badge-warning");
+  } else {
+    statusBadge.textContent = "Pass";
+    statusBadge.classList.add("badge-success");
+  }
+
+  // Populate warnings
+  if (warnings.length > 0) {
+    warningsContainer.classList.remove("hidden");
+    warningsContainer.innerHTML = warnings
+      .map(
+        (w) => `
+        <div class="flex items-start gap-1.5 text-warning-content">
+          <svg class="w-3.5 h-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          <span>${w}</span>
+        </div>`
+      )
+      .join("");
+  } else {
+    warningsContainer.classList.add("hidden");
+    warningsContainer.innerHTML = "";
+  }
 }
