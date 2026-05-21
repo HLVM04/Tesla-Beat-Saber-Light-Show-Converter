@@ -89,3 +89,62 @@ body {
 .pulse-hover:hover {
   animation: pulse-subtle 2s infinite ease-in-out;
 }
+
+/* Visualizer specific styles */
+.bg-neutral-900 {
+  background: radial-gradient(circle at center, #fafafa 0%, #e4e4e7 75%, #d4d4d8 100%) !important;
+}
+
+#visualizer-canvas {
+  outline: none;
+}
+
+/* Custom premium styling for the timeline scrubber */
+input[type="range"]#timeline-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: oklch(25% 0 0); /* dark default base */
+  border-radius: 9999px;
+  height: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+[data-theme="shadcn"] input[type="range"]#timeline-slider {
+  background: oklch(92% 0 0); /* light default base */
+}
+
+input[type="range"]#timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-base-100);
+  box-shadow: 0 0 8px var(--color-primary);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+input[type="range"]#timeline-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 12px var(--color-primary);
+}
+
+input[type="range"]#timeline-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-base-100);
+  box-shadow: 0 0 8px var(--color-primary);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+input[type="range"]#timeline-slider::-moz-range-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 12px var(--color-primary);
+}
+

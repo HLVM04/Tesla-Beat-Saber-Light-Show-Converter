@@ -1,8 +1,9 @@
 import "./style.css";
 import JSZip from "jszip";
 import { parseMapData, LightshowConverter } from "./converter";
-import type { InfoData } from "./converter";
+import type { InfoData, LightEffect } from "./converter";
 import { convertOggToWav } from "./wav-encoder";
+import { LightshowVisualizer } from "./visualizer";
 
 // --- State Variables ---
 interface MapFile {
@@ -15,6 +16,16 @@ let parsedInfo: InfoData | null = null;
 let generatedXsq: string | null = null;
 let generatedWav: Blob | null = null;
 let generatedZip: Blob | null = null;
+
+// --- Visualizer State ---
+let visualizer: LightshowVisualizer | null = null;
+let audioUrl: string | null = null;
+let audio: HTMLAudioElement | null = null;
+let playbackLoopId: number | null = null;
+let playbackDurationMs = 0;
+let currentTimeMs = 0;
+let isPlaying = false;
+let lastTickTime = 0;
 
 // --- DOM Elements ---
 const dropZone = document.getElementById("drop-zone")!;
@@ -46,6 +57,21 @@ const btnDownloadXsq = document.getElementById("btn-download-xsq")! as HTMLButto
 const btnDownloadWav = document.getElementById("btn-download-wav")! as HTMLButtonElement;
 const themeToggle = document.getElementById("theme-toggle")! as HTMLInputElement;
 
+// --- Visualizer DOM Elements ---
+const visualizerZone = document.getElementById("visualizer-zone")!;
+const visualizerCanvas = document.getElementById("visualizer-canvas")! as HTMLCanvasElement;
+const btnPlayPause = document.getElementById("btn-play-pause")! as HTMLButtonElement;
+const iconPlay = document.getElementById("icon-play")!;
+const iconPause = document.getElementById("icon-pause")!;
+const btnMute = document.getElementById("btn-mute")! as HTMLButtonElement;
+const iconVolumeOn = document.getElementById("icon-volume-on")!;
+const iconVolumeOff = document.getElementById("icon-volume-off")!;
+const timelineSlider = document.getElementById("timeline-slider")! as HTMLInputElement;
+const timeCurrent = document.getElementById("time-current")!;
+const timeDuration = document.getElementById("time-duration")!;
+const btnResetCamera = document.getElementById("btn-reset-camera")! as HTMLButtonElement;
+const carModelSelect = document.getElementById("car-model-select")! as HTMLSelectElement;
+
 // --- Initialize Event Listeners ---
 document.addEventListener("DOMContentLoaded", () => {
   setupTheme();
@@ -53,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFileSelects();
   setupConversion();
   setupDownloads();
+  setupVisualizerControls();
 });
 
 // --- Theme Setup ---
@@ -318,7 +345,20 @@ function populateDifficulties() {
   
   if (!parsedInfo || !parsedInfo._difficultyBeatmapSets) return;
 
-  let firstOption = true;
+  // Find the highest difficulty rank beatmap across all sets
+  let highestRank = -1;
+  let highestFilename = "";
+
+  for (const set of parsedInfo._difficultyBeatmapSets) {
+    for (const diffMap of set._difficultyBeatmaps) {
+      const rank = typeof diffMap._difficultyRank === "number" ? diffMap._difficultyRank : 0;
+      if (rank > highestRank) {
+        highestRank = rank;
+        highestFilename = diffMap._beatmapFilename;
+      }
+    }
+  }
+
   for (const set of parsedInfo._difficultyBeatmapSets) {
     const setName = set._difficultyBeatmapSet || "Standard";
     
@@ -330,12 +370,16 @@ function populateDifficulties() {
       option.value = filename;
       option.innerText = `${setName} - ${difficultyName}`;
       
-      if (firstOption) {
+      if (filename === highestFilename) {
         option.selected = true;
-        firstOption = false;
       }
       difficultySelect.appendChild(option);
     }
+  }
+
+  // Fallback: if no highest difficulty matched, select the first option
+  if (difficultySelect.selectedIndex === -1 && difficultySelect.options.length > 0) {
+    difficultySelect.options[0].selected = true;
   }
 }
 
@@ -373,7 +417,7 @@ function setupConversion() {
 
       // 2. Generate Lightshow XML
       logConsole("Translating Beat Saber events to Tesla physical commands...");
-      const converter = new LightshowConverter(parsedInfo._beatsPerMinute, normalizedMap);
+      const converter = new LightshowConverter(parsedInfo._beatsPerMinute, normalizedMap, 100);
       generatedXsq = converter.generateLightshow();
       logConsole(`Successfully compiled lightshow layout XML (Size: ${generatedXsq.length} characters).`, "success");
 
@@ -424,6 +468,15 @@ function setupConversion() {
       setupDownloadUrls();
       downloadZone.classList.remove("hidden");
       logConsole("SUCCESS: Tesla light show files are ready for download!", "success");
+
+      // Initialize the visualizer preview
+      if (generatedXsq) {
+        const effects = converter.getLightEffects();
+        const durationSec = converter.getDurationSeconds();
+        logConsole("Initializing 3D preview visualizer...");
+        initVisualizer(effects, durationSec, generatedWav);
+        logConsole("3D preview visualizer ready!", "success");
+      }
 
     } catch (err) {
       logConsole(`Conversion failed: ${err instanceof Error ? err.message : String(err)}`, "error");
@@ -497,4 +550,232 @@ function resetOutputs() {
   generatedZip = null;
   downloadZone.classList.add("hidden");
   btnDownloadWav.setAttribute("disabled", "true");
+  cleanupVisualizer();
+}
+
+// --- Visualizer Playback Logic ---
+
+function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: number, audioBlob: Blob | null) {
+  cleanupVisualizer();
+
+  visualizerZone.classList.remove("hidden");
+
+  // Create new Three.js visualizer with loading overlay state callback
+  visualizer = new LightshowVisualizer(visualizerCanvas, (isLoading) => {
+    const overlay = document.getElementById("visualizer-overlay");
+    if (overlay) {
+      overlay.classList.toggle("hidden", !isLoading);
+    }
+  });
+
+  // Load the currently selected car model
+  const selectedModel = carModelSelect.value as "Model_S" | "Cybertruck";
+  visualizer.loadCarModel(selectedModel).then(() => {
+    if (visualizer) {
+      visualizer.setLightEffects(effects);
+      visualizer.updatePlaybackTime(currentTimeMs);
+    }
+  });
+
+  playbackDurationMs = durationSec * 1000;
+  timelineSlider.max = playbackDurationMs.toString();
+  timelineSlider.value = "0";
+  timeDuration.innerText = formatTime(playbackDurationMs);
+  timeCurrent.innerText = "0:00";
+  currentTimeMs = 0;
+  isPlaying = false;
+  
+  updatePlayPauseUI();
+
+  if (audioBlob) {
+    audioUrl = URL.createObjectURL(audioBlob);
+    audio = new Audio(audioUrl);
+    audio.volume = 1.0;
+    btnMute.removeAttribute("disabled");
+
+    audio.addEventListener("ended", () => {
+      pausePlayback();
+      seekTo(0);
+    });
+
+    updateMuteUI();
+  } else {
+    btnMute.setAttribute("disabled", "true");
+    iconVolumeOn.classList.remove("hidden");
+    iconVolumeOff.classList.add("hidden");
+  }
+}
+
+function startPlayback() {
+  if (isPlaying) return;
+  isPlaying = true;
+  updatePlayPauseUI();
+
+  if (audio) {
+    audio.currentTime = currentTimeMs / 1000;
+    audio.play().catch((err) => {
+      console.warn("Audio autoplay blocked or failed. Running custom timeline sync.", err);
+    });
+  }
+  startPlaybackLoop();
+}
+
+function pausePlayback() {
+  if (!isPlaying) return;
+  isPlaying = false;
+  updatePlayPauseUI();
+
+  if (audio) {
+    audio.pause();
+  }
+  stopPlaybackLoop();
+}
+
+function startPlaybackLoop() {
+  stopPlaybackLoop();
+  lastTickTime = performance.now();
+
+  const tick = () => {
+    if (!isPlaying) return;
+
+    if (audio) {
+      currentTimeMs = audio.currentTime * 1000;
+    } else {
+      const now = performance.now();
+      const elapsed = now - lastTickTime;
+      lastTickTime = now;
+      currentTimeMs += elapsed;
+    }
+
+    if (currentTimeMs >= playbackDurationMs) {
+      currentTimeMs = playbackDurationMs;
+      pausePlayback();
+      seekTo(0);
+      return;
+    }
+
+    updatePlaybackUI();
+    playbackLoopId = requestAnimationFrame(tick);
+  };
+
+  playbackLoopId = requestAnimationFrame(tick);
+}
+
+function stopPlaybackLoop() {
+  if (playbackLoopId !== null) {
+    cancelAnimationFrame(playbackLoopId);
+    playbackLoopId = null;
+  }
+}
+
+function seekTo(timeMs: number) {
+  currentTimeMs = Math.max(0, Math.min(timeMs, playbackDurationMs));
+  timelineSlider.value = currentTimeMs.toString();
+  timeCurrent.innerText = formatTime(currentTimeMs);
+
+  if (audio) {
+    audio.currentTime = currentTimeMs / 1000;
+  }
+
+  if (visualizer) {
+    visualizer.updatePlaybackTime(currentTimeMs);
+  }
+}
+
+function togglePlayPause() {
+  if (isPlaying) {
+    pausePlayback();
+  } else {
+    startPlayback();
+  }
+}
+
+function toggleMute() {
+  if (!audio) return;
+  audio.muted = !audio.muted;
+  updateMuteUI();
+}
+
+function updateMuteUI() {
+  const isMuted = audio ? audio.muted : false;
+  iconVolumeOn.classList.toggle("hidden", isMuted);
+  iconVolumeOff.classList.toggle("hidden", !isMuted);
+}
+
+function updatePlayPauseUI() {
+  if (isPlaying) {
+    iconPlay.classList.add("hidden");
+    iconPause.classList.remove("hidden");
+  } else {
+    iconPlay.classList.remove("hidden");
+    iconPause.classList.add("hidden");
+  }
+}
+
+function updatePlaybackUI() {
+  timelineSlider.value = currentTimeMs.toString();
+  timeCurrent.innerText = formatTime(currentTimeMs);
+
+  if (visualizer) {
+    visualizer.updatePlaybackTime(currentTimeMs);
+  }
+}
+
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function cleanupVisualizer() {
+  pausePlayback();
+  stopPlaybackLoop();
+
+  if (visualizer) {
+    visualizer.dispose();
+    visualizer = null;
+  }
+
+  if (audio) {
+    audio.pause();
+    audio.src = "";
+    audio.load();
+    audio = null;
+  }
+
+  if (audioUrl) {
+    URL.revokeObjectURL(audioUrl);
+    audioUrl = null;
+  }
+
+  visualizerZone.classList.add("hidden");
+}
+
+function setupVisualizerControls() {
+  btnPlayPause.addEventListener("click", togglePlayPause);
+  btnMute.addEventListener("click", toggleMute);
+
+  // Timeline Scrubbing
+  timelineSlider.addEventListener("input", (e) => {
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    seekTo(val);
+  });
+
+  // Reset Camera View
+  btnResetCamera.addEventListener("click", () => {
+    if (visualizer) {
+      visualizer.resetCameraView();
+    }
+  });
+
+  // Car Model Selection
+  carModelSelect.addEventListener("change", async (e) => {
+    const model = (e.target as HTMLSelectElement).value as "Model_S" | "Cybertruck";
+    if (visualizer) {
+      await visualizer.loadCarModel(model);
+      // Immediately reflect current playback timeline lights
+      visualizer.updatePlaybackTime(currentTimeMs);
+    }
+  });
 }

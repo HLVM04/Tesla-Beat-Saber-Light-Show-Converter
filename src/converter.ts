@@ -9,6 +9,11 @@ export const LightBlinkDuration = 100;
 export const SequenceBufferTime = 5.0; // seconds
 export const MillisecondsPerMinute = 60000.0;
 
+export interface LightEffect {
+  startTime: number; // in milliseconds
+  endTime: number;   // in milliseconds
+}
+
 // Beat Saber V2 Formats
 export interface Note {
   _time: number;
@@ -128,21 +133,33 @@ export class LightshowConverter {
   private bpmPerMillisecond: number;
   private mapData: MapData;
   private effects: Record<string, string[]> = {};
+  private effectsData: Record<string, LightEffect[]> = {};
   private lastBlockTime: number = 0;
+  private blinkDuration: number;
 
-  constructor(bpm: number, mapData: MapData) {
+  constructor(bpm: number, mapData: MapData, blinkDuration: number = 100) {
     this.bpmPerMillisecond = bpm / MillisecondsPerMinute;
     this.mapData = mapData;
+    this.blinkDuration = blinkDuration;
   }
 
   public generateLightshow(): string {
     this.effects = {};
+    this.effectsData = {};
     this.lastBlockTime = 0;
 
     this.processNotes();
     this.processEvents();
 
     return this.buildXMLContent();
+  }
+
+  public getLightEffects(): Record<string, LightEffect[]> {
+    return this.effectsData;
+  }
+
+  public getDurationSeconds(): number {
+    return this.lastBlockTime / 1000 + SequenceBufferTime;
   }
 
   private processNotes(): void {
@@ -159,13 +176,17 @@ export class LightshowConverter {
       if (!bindings) continue;
 
       for (const binding of bindings) {
-        const effect = `        <Effect ref="0" name="On" startTime="${startTime}" endTime="${
-          startTime + LightBlinkDuration
-        }" palette="0"/>`;
+        const endTime = startTime + this.blinkDuration;
+        const effect = `        <Effect ref="0" name="On" startTime="${startTime}" endTime="${endTime}" palette="0"/>`;
         if (!this.effects[binding]) {
           this.effects[binding] = [];
         }
         this.effects[binding].push(effect);
+
+        if (!this.effectsData[binding]) {
+          this.effectsData[binding] = [];
+        }
+        this.effectsData[binding].push({ startTime, endTime });
       }
     }
   }
@@ -197,6 +218,11 @@ export class LightshowConverter {
           this.effects[binding] = [];
         }
         this.effects[binding].push(effect);
+
+        if (!this.effectsData[binding]) {
+          this.effectsData[binding] = [];
+        }
+        this.effectsData[binding].push({ startTime, endTime });
       }
     }
   }
