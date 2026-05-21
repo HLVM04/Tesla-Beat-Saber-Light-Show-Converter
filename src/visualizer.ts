@@ -28,6 +28,7 @@ export class LightshowVisualizer {
   private lightEffects: Record<string, LightEffect[]> = {};
   private animationFrameId: number | null = null;
   private isAutoRotating: boolean = true;
+  private isResettingCamera: boolean = false;
   private lastTime: number = 0;
   private lastTimeMs: number | null = null;
 
@@ -97,10 +98,13 @@ export class LightshowVisualizer {
     this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
     this.controls.minDistance = 3;
     this.controls.maxDistance = 15;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 0.6; // slow orbital rotate
 
     // Listen to user interactions to pause auto-rotation temporarily
     this.controls.addEventListener("start", () => {
       this.isAutoRotating = false;
+      this.isResettingCamera = false;
     });
 
     // Lights
@@ -212,12 +216,12 @@ export class LightshowVisualizer {
                         if ('shininess' in anyMat) anyMat.shininess = 35; 
                         if ('specular' in anyMat) anyMat.specular.setHex(0x1a1a1a); 
                       } else if (isCybertruckBody) {
-                        // Cybertruck premium brushed stainless steel - soft metallic gray
-                        anyMat.color.setHex(0xbcbcbc); 
-                        if ('metalness' in anyMat) anyMat.metalness = 0.25;
-                        if ('roughness' in anyMat) anyMat.roughness = 0.5;
-                        if ('shininess' in anyMat) anyMat.shininess = 30;
-                        if ('specular' in anyMat) anyMat.specular.setHex(0x111111);
+                        // Cybertruck premium brushed stainless steel - bright metallic light gray
+                        anyMat.color.setHex(0xe0e0e0); 
+                        if ('metalness' in anyMat) anyMat.metalness = 0.85;
+                        if ('roughness' in anyMat) anyMat.roughness = 0.28;
+                        if ('shininess' in anyMat) anyMat.shininess = 75;
+                        if ('specular' in anyMat) anyMat.specular.setHex(0xaaaaaa);
                       } else if (matName.includes("Windows_TopSG") || matName.includes("phong1SG")) {
                         // High-end dark tinted glass
                         anyMat.color.setHex(0x0a0f1d);
@@ -721,6 +725,43 @@ export class LightshowVisualizer {
   }
 
   /**
+   * Helper to calculate the perfect fitted camera position coordinate for the default view direction (-6, 3, 7).
+   */
+  private getFittedDefaultCameraPosition(): THREE.Vector3 {
+    if (!this.carGroup) return new THREE.Vector3(-6, 3, 7);
+
+    // Save current camera position, clip planes, and controls state
+    const oldPos = this.camera.position.clone();
+    const oldTarget = this.controls.target.clone();
+    const oldNear = this.camera.near;
+    const oldFar = this.camera.far;
+    const oldMinDist = this.controls.minDistance;
+    const oldMaxDist = this.controls.maxDistance;
+
+    // Temporarily set camera to default position and center target
+    this.camera.position.set(-6, 3, 7);
+    this.controls.target.set(0, 0, 0);
+
+    // Run viewport fit calculation
+    this.fitModelToViewport();
+
+    // Read calculated fitted position
+    const fittedPos = this.camera.position.clone();
+
+    // Restore camera position, clip planes, and controls state
+    this.camera.position.copy(oldPos);
+    this.controls.target.copy(oldTarget);
+    this.camera.near = oldNear;
+    this.camera.far = oldFar;
+    this.camera.updateProjectionMatrix();
+    this.controls.minDistance = oldMinDist;
+    this.controls.maxDistance = oldMaxDist;
+    this.controls.update();
+
+    return fittedPos;
+  }
+
+  /**
    * Camera rotating loop + WebGL rendering
    */
   private startAnimationLoop(): void {
@@ -731,12 +772,23 @@ export class LightshowVisualizer {
       const delta = (timestamp - this.lastTime) / 1000;
       this.lastTime = timestamp;
 
-      // Slow orbital rotate when idle
-      if (this.isAutoRotating) {
-        this.carGroup.rotation.y += delta * 0.1;
-      } else {
-        // Slow rotation reset
-        this.carGroup.rotation.y = 0; 
+      // Sync autoRotate property of controls with state
+      this.controls.autoRotate = this.isAutoRotating && !this.isResettingCamera;
+
+      if (this.isResettingCamera) {
+        const targetPos = this.getFittedDefaultCameraPosition();
+        
+        // Smoothly ease camera position and look-at target
+        this.camera.position.lerp(targetPos, delta * 5.0);
+        this.controls.target.lerp(new THREE.Vector3(0, 0, 0), delta * 5.0);
+        
+        // Check if we are very close to finishing the transition
+        const posDist = this.camera.position.distanceTo(targetPos);
+        if (posDist < 0.01) {
+          this.camera.position.copy(targetPos);
+          this.controls.target.set(0, 0, 0);
+          this.isResettingCamera = false;
+        }
       }
 
       this.controls.update();
@@ -750,12 +802,9 @@ export class LightshowVisualizer {
    * Resets the camera orientation and enables auto-rotation back.
    */
   public resetCameraView(): void {
-    this.carGroup.rotation.set(0, 0, 0);
+    if (!this.carGroup) return;
+    this.isResettingCamera = true;
     this.isAutoRotating = true;
-    
-    // Set to a standard beautiful perspective starting angle and fit it
-    this.camera.position.set(-6, 3, 7);
-    this.fitModelToViewport();
   }
 
   /**

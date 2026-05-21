@@ -13,6 +13,8 @@ interface MapFile {
 
 let loadedFiles: Record<string, MapFile> = {};
 let parsedInfo: InfoData | null = null;
+let selectedDifficultyFile: string | null = null;
+
 let generatedXsq: string | null = null;
 let generatedFseq: Uint8Array | null = null;
 let generatedWav: Blob | null = null;
@@ -35,7 +37,6 @@ const folderInput = document.getElementById("folder-input")! as HTMLInputElement
 const btnBrowseZip = document.getElementById("btn-browse-zip")!;
 const btnBrowseFolder = document.getElementById("btn-browse-folder")!;
 
-const mapInfoCard = document.getElementById("map-info-card")!;
 const coverPreview = document.getElementById("cover-preview")! as HTMLImageElement;
 const coverPlaceholder = document.getElementById("cover-placeholder")!;
 const songTitle = document.getElementById("song-title")!;
@@ -44,23 +45,24 @@ const songArtist = document.getElementById("song-artist")!;
 const mapBpm = document.getElementById("map-bpm")!;
 const mapVersionBadge = document.getElementById("map-version-badge")!;
 
-const configZone = document.getElementById("config-zone")!;
-const difficultySelect = document.getElementById("difficulty-select")! as HTMLSelectElement;
+const difficultyTabs = document.getElementById("difficulty-tabs")!;
 const btnConvert = document.getElementById("btn-convert")! as HTMLButtonElement;
 
-const logZone = document.getElementById("log-zone")!;
-const processLoader = document.getElementById("process-loader")!;
-const consoleOutput = document.getElementById("console-output")!;
-
-const downloadZone = document.getElementById("download-zone")!;
 const btnDownloadBundle = document.getElementById("btn-download-bundle")! as HTMLButtonElement;
 const btnDownloadFseq = document.getElementById("btn-download-fseq")! as HTMLButtonElement;
 const btnDownloadXsq = document.getElementById("btn-download-xsq")! as HTMLButtonElement;
 const btnDownloadWav = document.getElementById("btn-download-wav")! as HTMLButtonElement;
 const themeToggle = document.getElementById("theme-toggle")! as HTMLInputElement;
 
+// --- State Machine Containers ---
+const uploadCard = document.getElementById("upload-card")!;
+const configCard = document.getElementById("config-card")!;
+const progressCard = document.getElementById("progress-card")!;
+const resultsContainer = document.getElementById("results-and-visualizer-container")!;
+const btnUploadDifferent = document.getElementById("btn-upload-different")!;
+const btnResetApp = document.getElementById("btn-reset-app")!;
+
 // --- Visualizer DOM Elements ---
-const visualizerZone = document.getElementById("visualizer-zone")!;
 const visualizerCanvas = document.getElementById("visualizer-canvas")! as HTMLCanvasElement;
 const btnPlayPause = document.getElementById("btn-play-pause")! as HTMLButtonElement;
 const iconPlay = document.getElementById("icon-play")!;
@@ -72,7 +74,9 @@ const timelineSlider = document.getElementById("timeline-slider")! as HTMLInputE
 const timeCurrent = document.getElementById("time-current")!;
 const timeDuration = document.getElementById("time-duration")!;
 const btnResetCamera = document.getElementById("btn-reset-camera")! as HTMLButtonElement;
-const carModelSelect = document.getElementById("car-model-select")! as HTMLSelectElement;
+const typeTabsContainer = document.getElementById("type-tabs-container")!;
+const typeTabs = document.getElementById("type-tabs")!;
+const carModelTabs = document.getElementById("car-model-tabs")!;
 
 // --- Initialize Event Listeners ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -82,11 +86,31 @@ document.addEventListener("DOMContentLoaded", () => {
   setupConversion();
   setupDownloads();
   setupVisualizerControls();
+  
+  // Navigation reset buttons
+  if (btnUploadDifferent) {
+    btnUploadDifferent.addEventListener("click", () => resetUI());
+  }
+  if (btnResetApp) {
+    btnResetApp.addEventListener("click", () => resetUI());
+  }
+  
+  // Set starting state
+  setUIState("upload");
 });
+
+// --- State Machine Visibility Handler ---
+type UIState = "upload" | "config" | "progress" | "done";
+
+function setUIState(state: UIState) {
+  uploadCard.classList.toggle("hidden", state !== "upload");
+  configCard.classList.toggle("hidden", state !== "config");
+  progressCard.classList.toggle("hidden", state !== "progress");
+  resultsContainer.classList.toggle("hidden", state !== "done");
+}
 
 // --- Theme Setup ---
 function setupTheme() {
-  // Check local storage or system preference
   const savedTheme = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   
@@ -109,22 +133,21 @@ function setupTheme() {
 // --- Drag & Drop ---
 function setupDragAndDrop() {
   dropZone.addEventListener("click", () => {
-    // Default browse to ZIP
     zipInput.click();
   });
 
   dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
-    dropZone.classList.add("border-accent", "bg-base-200");
+    dropZone.classList.add("border-base-content", "bg-base-200/80");
   });
 
   dropZone.addEventListener("dragleave", () => {
-    dropZone.classList.remove("border-accent", "bg-base-200");
+    dropZone.classList.remove("border-base-content", "bg-base-200/80");
   });
 
   dropZone.addEventListener("drop", async (e) => {
     e.preventDefault();
-    dropZone.classList.remove("border-accent", "bg-base-200");
+    dropZone.classList.remove("border-base-content", "bg-base-200/80");
     
     const files = e.dataTransfer?.files;
     if (!files || files.length === 0) return;
@@ -132,7 +155,6 @@ function setupDragAndDrop() {
     if (files.length === 1 && files[0].name.endsWith(".zip")) {
       await processZipFile(files[0]);
     } else {
-      // Process list of files (as if a folder was dropped)
       await processFileList(files);
     }
   });
@@ -163,35 +185,21 @@ function setupFileSelects() {
   });
 }
 
-// --- Console Logger Helper ---
+// --- Console Logger (Redirected to Developer Console) ---
 function logConsole(msg: string, type: "info" | "success" | "warning" | "error" = "info") {
-  const timestamp = new Date().toLocaleTimeString();
-  const line = document.createElement("div");
-  
-  let colorClass = "text-base-content/80";
-  if (type === "success") colorClass = "text-success font-semibold";
-  if (type === "warning") colorClass = "text-warning font-semibold";
-  if (type === "error") colorClass = "text-error font-semibold";
-
-  line.className = `py-0.5 ${colorClass}`;
-  
-  // Format message nicely
-  const prefix = `[${timestamp}] ${type.toUpperCase()}: `;
-  line.innerText = prefix + msg;
-  
-  consoleOutput.appendChild(line);
-  consoleOutput.scrollTop = consoleOutput.scrollHeight;
-}
-
-function clearConsole() {
-  consoleOutput.innerHTML = "";
+  const prefix = `[TeslaConverter] [${type.toUpperCase()}]`;
+  if (type === "error") {
+    console.error(`${prefix} ${msg}`);
+  } else if (type === "warning") {
+    console.warn(`${prefix} ${msg}`);
+  } else {
+    console.log(`${prefix} ${msg}`);
+  }
 }
 
 // --- ZIP processing ---
 async function processZipFile(file: File) {
   resetUI();
-  logZone.classList.remove("hidden");
-  processLoader.classList.remove("hidden");
   logConsole(`Extracting ZIP archive: ${file.name}...`);
 
   loadedFiles = {};
@@ -204,7 +212,6 @@ async function processZipFile(file: File) {
       if (entry.dir) return;
       
       const p = entry.async("arraybuffer").then((buffer) => {
-        // Flatten directory structure by extracting base name
         const name = relativePath.split("/").pop() || relativePath;
         loadedFiles[name.toLowerCase()] = {
           name: name,
@@ -219,15 +226,13 @@ async function processZipFile(file: File) {
     processLoadedFiles();
   } catch (err) {
     logConsole(`ZIP extraction failed: ${err instanceof Error ? err.message : String(err)}`, "error");
-    processLoader.classList.add("hidden");
+    alert("ZIP extraction failed. Please make sure this is a valid archive.");
   }
 }
 
 // --- Directory/FileList processing ---
 async function processFileList(files: FileList) {
   resetUI();
-  logZone.classList.remove("hidden");
-  processLoader.classList.remove("hidden");
   logConsole(`Reading ${files.length} selected files...`);
 
   loadedFiles = {};
@@ -236,7 +241,6 @@ async function processFileList(files: FileList) {
     const promises: Promise<void>[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // Get relative path or fallback to filename
       const relativePath = file.webkitRelativePath || file.name;
       const name = relativePath.split("/").pop() || relativePath;
 
@@ -254,17 +258,16 @@ async function processFileList(files: FileList) {
     processLoadedFiles();
   } catch (err) {
     logConsole(`File load failed: ${err instanceof Error ? err.message : String(err)}`, "error");
-    processLoader.classList.add("hidden");
+    alert("Loading directory files failed. Please try again.");
   }
 }
 
 // --- Process Loaded Files & Read Info.dat ---
 function processLoadedFiles() {
-  // Look for Info.dat or info.dat
   const infoKey = "info.dat";
   if (!loadedFiles[infoKey]) {
     logConsole("Error: Could not find Info.dat in the uploaded files. Is this a valid Beat Saber map folder?", "error");
-    processLoader.classList.add("hidden");
+    alert("Error: Could not find Info.dat. Make sure you dropped a valid Beat Saber song directory or archive!");
     return;
   }
 
@@ -279,10 +282,8 @@ function processLoadedFiles() {
     renderCoverPreview();
 
     // Fill metadata text
-    songTitle.innerText = parsedInfo._songFilename || "Unknown Title";
-    // Check if other title fields exist in parsed JSON
     const raw: any = parsedInfo;
-    const realTitle = raw._songName || parsedInfo._songFilename;
+    const realTitle = raw._songName || parsedInfo._songFilename || "Unknown Title";
     const realSub = raw._songSubName || "";
     const realArtist = raw._songAuthorName || "Unknown Artist";
 
@@ -293,18 +294,15 @@ function processLoadedFiles() {
     mapBpm.innerText = `BPM: ${parsedInfo._beatsPerMinute}`;
     mapVersionBadge.innerText = `Format: ${parsedInfo._version || "v2"}`;
 
-    // Populate Difficulties
+    // Populate Difficulties (Tap Bar)
     populateDifficulties();
 
-    // Reveal UI segments
-    mapInfoCard.classList.remove("hidden");
-    configZone.classList.remove("hidden");
-    
-    logConsole("Beatmap successfully parsed. Please select a difficulty and click convert.", "success");
+    // Transition to morphed Configuration screen
+    setUIState("config");
+    logConsole("Beatmap successfully loaded and parsed.", "success");
   } catch (err) {
     logConsole(`Failed to parse map metadata: ${err instanceof Error ? err.message : String(err)}`, "error");
-  } finally {
-    processLoader.classList.add("hidden");
+    alert("Parsing beatmap details failed. Please ensure the files are structured correctly.");
   }
 }
 
@@ -314,10 +312,8 @@ function renderCoverPreview() {
   const coverFilename = raw._coverImageFilename || "cover.jpg";
   const coverKey = coverFilename.toLowerCase();
 
-  // Try finding it in loaded files
   let fileEntry = loadedFiles[coverKey];
   
-  // Try fallback image names
   if (!fileEntry) {
     const fallbacks = ["cover.jpg", "cover.png", "cover.jpeg", "info.jpg", "info.png"];
     for (const f of fallbacks) {
@@ -341,76 +337,157 @@ function renderCoverPreview() {
   }
 }
 
-// --- Populate Difficulties Dropdown ---
-function populateDifficulties() {
-  difficultySelect.innerHTML = "";
-  
-  if (!parsedInfo || !parsedInfo._difficultyBeatmapSets) return;
+let selectedType: string = "Standard";
 
-  // Find the highest difficulty rank beatmap across all sets
+// --- Helper to extract normalized difficulty set characteristic ---
+function getCharacteristicName(set: any): string {
+  const name = set._beatmapCharacteristicName || set.beatmapCharacteristicName || set._difficultyBeatmapSet || "Standard";
+  return typeof name === "string" ? name.trim() : "Standard";
+}
+
+// --- Populate Dynamic Beatmap Types and Difficulties ---
+function populateDifficulties() {
+  difficultyTabs.innerHTML = "";
+  selectedDifficultyFile = null;
+  
+  if (!parsedInfo || !parsedInfo._difficultyBeatmapSets || parsedInfo._difficultyBeatmapSets.length === 0) {
+    typeTabsContainer.classList.add("hidden");
+    return;
+  }
+
+  const sets = parsedInfo._difficultyBeatmapSets;
+  
+  // 1. Determine all unique types/sets using the robust characteristic name getter
+  const types = Array.from(new Set(sets.map(s => getCharacteristicName(s))));
+  
+  // 2. Set default active type if not already valid or set
+  if (!types.includes(selectedType)) {
+    // Try to default to "Standard", otherwise use the first available type
+    selectedType = types.includes("Standard") ? "Standard" : types[0];
+  }
+
+  // 3. Render or Hide the Type Selector
+  if (types.length > 1) {
+    typeTabsContainer.classList.remove("hidden");
+    typeTabs.innerHTML = "";
+    
+    types.forEach((type) => {
+      const typeBtn = document.createElement("button");
+      typeBtn.className = "type-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
+      typeBtn.innerText = type;
+      
+      if (type === selectedType) {
+        typeBtn.classList.remove("bg-base-200/70", "text-base-content");
+        typeBtn.classList.add("bg-primary", "text-primary-content", "active");
+      }
+      
+      typeBtn.addEventListener("click", () => {
+        if (typeBtn.classList.contains("active")) return;
+        selectedType = type;
+        logConsole(`Selected map type: ${type}`);
+        populateDifficulties(); // Re-render difficulties for the newly selected type
+      });
+      
+      typeTabs.appendChild(typeBtn);
+    });
+  } else {
+    typeTabsContainer.classList.add("hidden");
+  }
+
+  // 4. Find the active set based on selectedType using the robust characteristic getter
+  const activeSet = sets.find(s => getCharacteristicName(s) === selectedType) || sets[0];
+  if (!activeSet || !activeSet._difficultyBeatmaps || activeSet._difficultyBeatmaps.length === 0) return;
+
+  // 5. Render Difficulties for the active set
+  // Find highest rank difficulty in the active set to auto-select
   let highestRank = -1;
   let highestFilename = "";
-
-  for (const set of parsedInfo._difficultyBeatmapSets) {
-    for (const diffMap of set._difficultyBeatmaps) {
-      const rank = typeof diffMap._difficultyRank === "number" ? diffMap._difficultyRank : 0;
-      if (rank > highestRank) {
-        highestRank = rank;
-        highestFilename = diffMap._beatmapFilename;
-      }
+  
+  activeSet._difficultyBeatmaps.forEach((diffMap) => {
+    const rank = typeof diffMap._difficultyRank === "number" ? diffMap._difficultyRank : 0;
+    if (rank > highestRank) {
+      highestRank = rank;
+      highestFilename = diffMap._beatmapFilename;
     }
-  }
+  });
 
-  for (const set of parsedInfo._difficultyBeatmapSets) {
-    const setName = set._difficultyBeatmapSet || "Standard";
+  activeSet._difficultyBeatmaps.forEach((diffMap) => {
+    const filename = diffMap._beatmapFilename;
+    const difficultyName = diffMap._difficulty; // e.g. "Easy", "ExpertPlus"
     
-    for (const diffMap of set._difficultyBeatmaps) {
-      const filename = diffMap._beatmapFilename;
-      const difficultyName = diffMap._difficulty;
-      
-      const option = document.createElement("option");
-      option.value = filename;
-      option.innerText = `${setName} - ${difficultyName}`;
-      
-      if (filename === highestFilename) {
-        option.selected = true;
-      }
-      difficultySelect.appendChild(option);
+    const tabButton = document.createElement("button");
+    tabButton.className = "diff-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
+    tabButton.innerText = difficultyName; // Only show difficulty level, type is selected separately!
+    
+    // Auto-select highest difficulty
+    if (filename === highestFilename) {
+      tabButton.classList.remove("bg-base-200/70", "text-base-content");
+      tabButton.classList.add("bg-primary", "text-primary-content", "active");
+      selectedDifficultyFile = filename;
     }
-  }
+    
+    tabButton.addEventListener("click", () => {
+      if (tabButton.classList.contains("active")) return;
+      difficultyTabs.querySelectorAll(".diff-tab").forEach((btn) => {
+        btn.classList.remove("bg-primary", "text-primary-content", "active");
+        btn.classList.add("bg-base-200/70", "text-base-content");
+      });
+      
+      tabButton.classList.remove("bg-base-200/70", "text-base-content");
+      tabButton.classList.add("bg-primary", "text-primary-content", "active");
+      selectedDifficultyFile = filename;
+      logConsole(`Selected difficulty: ${difficultyName}`);
+    });
 
-  // Fallback: if no highest difficulty matched, select the first option
-  if (difficultySelect.selectedIndex === -1 && difficultySelect.options.length > 0) {
-    difficultySelect.options[0].selected = true;
+    difficultyTabs.appendChild(tabButton);
+  });
+
+  // Fallback auto-select if nothing is selected
+  if (!selectedDifficultyFile && difficultyTabs.children.length > 0) {
+    const firstTab = difficultyTabs.children[0] as HTMLButtonElement;
+    firstTab.click();
   }
+}
+
+// --- Smooth Progress Bar sweeps ---
+function updateProgress(percent: number, status: string): Promise<void> {
+  const progressBarSweep = document.getElementById("progress-bar-sweep")!;
+  const progressStatus = document.getElementById("progress-status")!;
+  
+  if (progressStatus) progressStatus.innerText = status;
+  if (progressBarSweep) {
+    progressBarSweep.style.width = `${percent}%`;
+  }
+  
+  // Yield execution thread slightly to trigger smooth CSS animations
+  return new Promise((resolve) => setTimeout(resolve, 350));
 }
 
 // --- Translation Trigger ---
 function setupConversion() {
   btnConvert.addEventListener("click", async () => {
-    if (!parsedInfo || !difficultySelect.value) return;
+    if (!parsedInfo || !selectedDifficultyFile) return;
     
-    const selectedFilename = difficultySelect.value;
+    const selectedFilename = selectedDifficultyFile;
     const fileKey = selectedFilename.toLowerCase();
     
     resetOutputs();
-    logZone.classList.remove("hidden");
-    processLoader.classList.remove("hidden");
-    clearConsole();
-
+    setUIState("progress");
+    
+    await updateProgress(15, "Parsing beatmap file...");
     logConsole(`Starting Tesla Light Show conversion...`);
     logConsole(`Target difficulty map: ${selectedFilename}`);
 
     const mapFile = loadedFiles[fileKey];
     if (!mapFile) {
       logConsole(`Error: Beatmap file "${selectedFilename}" not found in loaded files.`, "error");
-      processLoader.classList.add("hidden");
+      alert(`Could not find the beatmap file named: "${selectedFilename}". Resetting.`);
+      resetUI();
       return;
     }
 
     try {
       // 1. Parse Beatmap
-      logConsole("Parsing map JSON and normalising versions...");
       const decoder = new TextDecoder("utf-8");
       const mapJson = decoder.decode(mapFile.data);
       const normalizedMap = parseMapData(mapJson);
@@ -418,22 +495,21 @@ function setupConversion() {
       logConsole(`Loaded ${normalizedMap._notes?.length || 0} notes and ${normalizedMap._events?.length || 0} events.`);
 
       // 2. Generate Lightshow XML
-      logConsole("Translating Beat Saber events to Tesla physical commands...");
+      await updateProgress(40, "Translating light events...");
       const converter = new LightshowConverter(parsedInfo._beatsPerMinute, normalizedMap, 100);
       generatedXsq = converter.generateLightshow();
-      logConsole(`Successfully compiled lightshow layout XML (Size: ${generatedXsq.length} characters).`, "success");
+      logConsole(`Successfully compiled lightshow layout XML.`, "success");
 
       // 2b. Generate FSEQ Binary
-      logConsole("Generating play-ready FSEQ binary sequence...");
+      await updateProgress(60, "Generating ready FSEQ commands...");
       generatedFseq = converter.generateFseq();
-      logConsole(`Successfully generated FSEQ binary sequence (Size: ${generatedFseq.length.toLocaleString()} bytes, ${Math.ceil(generatedFseq.length / 200).toLocaleString()} frames).`, "success");
+      logConsole(`Successfully generated FSEQ binary sequence (${generatedFseq.length} bytes).`, "success");
 
       // 3. Audio Transcoding
       const songFilename = parsedInfo._songFilename || "song.egg";
       const audioKey = songFilename.toLowerCase();
       let audioFile = loadedFiles[audioKey];
 
-      // Fallback search if exact match doesn't work
       if (!audioFile) {
         for (const [k, f] of Object.entries(loadedFiles)) {
           if (k.endsWith(".egg") || k.endsWith(".ogg")) {
@@ -445,22 +521,21 @@ function setupConversion() {
       }
 
       if (audioFile) {
-        logConsole(`Found audio file: ${audioFile.name}. Starting browser-side OGG to WAV decoding...`);
+        await updateProgress(75, "Transcoding OGG audio to WAV...");
         try {
           generatedWav = await convertOggToWav(audioFile.data, (progressMsg) => {
-            logConsole(progressMsg);
+            logConsole(`Transcoder: ${progressMsg}`);
           });
-          logConsole(`Audio transcoding completed successfully! Output Size: ${(generatedWav.size / (1024 * 1024)).toFixed(2)} MB.`, "success");
+          logConsole(`Audio transcoding completed successfully!`, "success");
         } catch (audioErr) {
           logConsole(`Warning: Audio transcoding failed: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`, "warning");
-          logConsole("The lightshow.xsq and lightshow.fseq will still be downloadable, but you'll have to manually supply audio in xLights.", "warning");
         }
       } else {
-        logConsole(`Warning: Audio file "${songFilename}" not found in the upload. Skipping audio transcoding.`, "warning");
+        logConsole(`Warning: Audio file "${songFilename}" not found in the upload. Skipping transcoding.`, "warning");
       }
 
       // 4. Create output ZIP bundle
-      logConsole("Creating output bundle ZIP archive...");
+      await updateProgress(90, "Packaging outputs bundle ZIP...");
       const outZip = new JSZip();
       
       if (generatedFseq) {
@@ -472,7 +547,7 @@ function setupConversion() {
       }
       
       generatedZip = await outZip.generateAsync({ type: "blob" });
-      logConsole(`Bundle ZIP created successfully! Output Size: ${(generatedZip.size / (1024 * 1024)).toFixed(2)} MB.`, "success");
+      logConsole(`Bundle ZIP created successfully!`, "success");
 
       // Enable download options
       setupDownloadUrls();
@@ -481,29 +556,29 @@ function setupConversion() {
       logConsole("Running Tesla compatibility checks...");
       runSimplifiedValidation(converter, !!generatedWav);
 
-      downloadZone.classList.remove("hidden");
+      await updateProgress(100, "Done! Initializing visualizer...");
+      
+      // Reveal the beautiful preview visualizer and download cards
+      setUIState("done");
       logConsole("SUCCESS: Tesla light show files are ready for download!", "success");
 
       // Initialize the visualizer preview
       if (generatedXsq) {
         const effects = converter.getLightEffects();
         const durationSec = converter.getDurationSeconds();
-        logConsole("Initializing 3D preview visualizer...");
         initVisualizer(effects, durationSec, generatedWav);
-        logConsole("3D preview visualizer ready!", "success");
       }
 
     } catch (err) {
       logConsole(`Conversion failed: ${err instanceof Error ? err.message : String(err)}`, "error");
-    } finally {
-      processLoader.classList.add("hidden");
+      alert(`An error occurred during light show compilation: ${err instanceof Error ? err.message : String(err)}`);
+      resetUI();
     }
   });
 }
 
 // --- Configure Downloads URLs & Actions ---
 function setupDownloadUrls() {
-  // Clean old trigger buttons
   btnDownloadBundle.onclick = null;
   btnDownloadFseq.onclick = null;
   btnDownloadXsq.onclick = null;
@@ -531,11 +606,13 @@ function setupDownloadUrls() {
 
   if (generatedWav) {
     btnDownloadWav.removeAttribute("disabled");
+    btnDownloadWav.classList.remove("btn-disabled");
     btnDownloadWav.onclick = () => {
       triggerDownload(generatedWav!, "lightshow.wav");
     };
   } else {
     btnDownloadWav.setAttribute("disabled", "true");
+    btnDownloadWav.classList.add("btn-disabled");
   }
 }
 
@@ -548,7 +625,6 @@ function triggerDownload(blob: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   
-  // Clean up memory after trigger
   setTimeout(() => {
     URL.revokeObjectURL(url);
   }, 100);
@@ -561,9 +637,15 @@ function setupDownloads() {
 // --- UI Reset Helpers ---
 function resetUI() {
   parsedInfo = null;
-  mapInfoCard.classList.add("hidden");
-  configZone.classList.add("hidden");
-  downloadZone.classList.add("hidden");
+  selectedDifficultyFile = null;
+  loadedFiles = {};
+  
+  // Clear inputs
+  zipInput.value = "";
+  folderInput.value = "";
+  
+  // Dynamic layout changes
+  setUIState("upload");
   resetOutputs();
 }
 
@@ -572,19 +654,15 @@ function resetOutputs() {
   generatedFseq = null;
   generatedWav = null;
   generatedZip = null;
-  downloadZone.classList.add("hidden");
   btnDownloadWav.setAttribute("disabled", "true");
+  btnDownloadWav.classList.add("btn-disabled");
   cleanupVisualizer();
 }
 
 // --- Visualizer Playback Logic ---
-
 function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: number, audioBlob: Blob | null) {
   cleanupVisualizer();
 
-  visualizerZone.classList.remove("hidden");
-
-  // Create new Three.js visualizer with loading overlay state callback
   visualizer = new LightshowVisualizer(visualizerCanvas, (isLoading) => {
     const overlay = document.getElementById("visualizer-overlay");
     if (overlay) {
@@ -592,8 +670,14 @@ function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: num
     }
   });
 
-  // Load the currently selected car model
-  const selectedModel = carModelSelect.value as "Model_S" | "Cybertruck";
+  let selectedModel: "Model_S" | "Cybertruck" = "Model_S";
+  if (carModelTabs) {
+    const activeCarTab = carModelTabs.querySelector(".car-tab.active");
+    if (activeCarTab) {
+      selectedModel = activeCarTab.getAttribute("data-car") as "Model_S" | "Cybertruck" || "Model_S";
+    }
+  }
+
   visualizer.loadCarModel(selectedModel).then(() => {
     if (visualizer) {
       visualizer.setLightEffects(effects);
@@ -638,7 +722,7 @@ function startPlayback() {
   if (audio) {
     audio.currentTime = currentTimeMs / 1000;
     audio.play().catch((err) => {
-      console.warn("Audio autoplay blocked or failed. Running custom timeline sync.", err);
+      console.warn("Audio autoplay blocked or failed. Syncing timeline manually.", err);
     });
   }
   startPlaybackLoop();
@@ -685,6 +769,7 @@ function startPlaybackLoop() {
   playbackLoopId = requestAnimationFrame(tick);
 }
 
+// --- Pause, Seek, and Volume Helpers ---
 function stopPlaybackLoop() {
   if (playbackLoopId !== null) {
     cancelAnimationFrame(playbackLoopId);
@@ -726,6 +811,7 @@ function updateMuteUI() {
   iconVolumeOff.classList.toggle("hidden", !isMuted);
 }
 
+// --- Player DOM UI controls ---
 function updatePlayPauseUI() {
   if (isPlaying) {
     iconPlay.classList.add("hidden");
@@ -772,8 +858,6 @@ function cleanupVisualizer() {
     URL.revokeObjectURL(audioUrl);
     audioUrl = null;
   }
-
-  visualizerZone.classList.add("hidden");
 }
 
 function setupVisualizerControls() {
@@ -793,15 +877,34 @@ function setupVisualizerControls() {
     }
   });
 
-  // Car Model Selection
-  carModelSelect.addEventListener("change", async (e) => {
-    const model = (e.target as HTMLSelectElement).value as "Model_S" | "Cybertruck";
-    if (visualizer) {
-      await visualizer.loadCarModel(model);
-      // Immediately reflect current playback timeline lights
-      visualizer.updatePlaybackTime(currentTimeMs);
-    }
-  });
+  // Car Model Selection using sleek horizontal tab toggles
+  if (carModelTabs) {
+    const carTabs = carModelTabs.querySelectorAll(".car-tab");
+    carTabs.forEach((tab) => {
+      tab.addEventListener("click", (e) => {
+        const clickedTab = e.currentTarget as HTMLButtonElement;
+        if (clickedTab.classList.contains("active")) {
+          return;
+        }
+        
+        const carModel = clickedTab.getAttribute("data-car") as "Model_S" | "Cybertruck";
+        
+        // Instant visual update of tabs
+        carTabs.forEach((t) => t.classList.remove("active"));
+        clickedTab.classList.add("active");
+        
+        logConsole(`Switching car model to: ${carModel}`);
+        
+        // Yield execution to the browser so the visual tab activation paints instantly
+        setTimeout(async () => {
+          if (visualizer) {
+            await visualizer.loadCarModel(carModel);
+            visualizer.updatePlaybackTime(currentTimeMs);
+          }
+        }, 50);
+      });
+    });
+  }
 }
 
 // --- Tesla Compatibility Validator ---
@@ -813,111 +916,105 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
   const commandRatio = commandsCount / commandLimit;
   const commandPercentage = Math.round(commandRatio * 100);
 
-  // 1. Get DOM elements
+  // Get DOM elements
   const statusBadge = document.getElementById("validator-status-badge")!;
   const commandRatioEl = document.getElementById("validator-command-ratio")!;
   const commandProgressEl = document.getElementById("validator-command-progress")!;
   
   const metricDuration = document.getElementById("validator-metric-duration")!;
-  const metricDurationStatus = document.getElementById("validator-metric-duration-status")!;
-  
-  const metricChannels = document.getElementById("validator-metric-channels")!;
-  const metricChannelsStatus = document.getElementById("validator-metric-channels-status")!;
-  
   const metricAudio = document.getElementById("validator-metric-audio")!;
-  const metricAudioStatus = document.getElementById("validator-metric-audio-status")!;
-  
-  const metricFormat = document.getElementById("validator-metric-format")!;
-  const metricFormatStatus = document.getElementById("validator-metric-format-status")!;
-  
   const warningsContainer = document.getElementById("validator-warnings")!;
 
-  // 2. Clear lists & statuses
+  const checkMemoryIcon = document.getElementById("validator-check-memory-icon")!;
+  const checkDurationIcon = document.getElementById("validator-check-duration-icon")!;
+  const checkAudioIcon = document.getElementById("validator-check-audio-icon")!;
+  const headerIconContainer = document.getElementById("validator-header-icon-container")!;
+
+  // Clear lists & statuses
   const warnings: string[] = [];
   let isFailed = false;
-  let isWarning = false;
 
-  // 3. Perform Checks
-  // Check memory / command count
-  commandRatioEl.textContent = `${commandsCount.toLocaleString()} / ${commandLimit.toLocaleString()} commands (${commandPercentage}%)`;
-  
-  // Set progress bar width and color
+  // 1. Command Count Limit Check
+  commandRatioEl.textContent = `${commandsCount.toLocaleString()} / ${commandLimit.toLocaleString()}`;
   commandProgressEl.style.width = `${Math.min(commandPercentage, 100)}%`;
   commandProgressEl.className = "h-full rounded-full transition-all duration-500";
+  
   if (commandsCount > commandLimit) {
-    commandProgressEl.classList.add("bg-error");
+    // Failed: Memory budget exceeded
+    commandProgressEl.classList.add("bg-red-400", "dark:bg-red-500/60");
+    commandRatioEl.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
+    checkMemoryIcon.textContent = "✗";
+    checkMemoryIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
     isFailed = true;
-    warnings.push(`<strong>CRITICAL:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to play on the vehicle.`);
-  } else if (commandsCount > 2800) {
-    commandProgressEl.classList.add("bg-warning");
-    isWarning = true;
-    warnings.push(`<strong>WARNING:</strong> High command count (<strong>${commandsCount.toLocaleString()}</strong> / 3,500). The sequence is approaching the Tesla memory limit.`);
+    warnings.push(`<strong>Memory limit exceeded:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to load or crash on the vehicle.`);
   } else {
-    commandProgressEl.classList.add("bg-success");
+    // Passed memory check
+    commandProgressEl.classList.add("bg-neutral-400", "dark:bg-neutral-600");
+    commandRatioEl.className = "font-mono text-[10px] text-muted-foreground font-semibold";
+    checkMemoryIcon.textContent = "✓";
+    checkMemoryIcon.className = "text-muted-foreground text-xs font-mono font-black";
   }
 
-  // Format Duration
+  // 2. Show Duration Check
   const minutes = Math.floor(durationSeconds / 60);
   const seconds = Math.floor(durationSeconds % 60);
   const formattedDuration = `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
   metricDuration.textContent = formattedDuration;
 
-  if (durationSeconds > 14400) { // 4 hours
-    metricDurationStatus.textContent = "✗ Too Long";
-    metricDurationStatus.className = "text-[9px] text-error font-medium mt-1 flex items-center gap-0.5";
+  if (durationSeconds > 14400) {
+    // Failed: Too long (> 4 hours)
+    checkDurationIcon.textContent = "✗";
+    checkDurationIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
+    metricDuration.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
     isFailed = true;
-    warnings.push(`<strong>CRITICAL:</strong> Show duration (<strong>${formattedDuration}</strong>) exceeds the 4-hour limit supported by Tesla vehicles.`);
+    warnings.push(`<strong>Show too long:</strong> Show duration (<strong>${formattedDuration}</strong>) exceeds the 4-hour playback limit supported by Tesla vehicles.`);
   } else {
-    metricDurationStatus.textContent = "✓ Safe";
-    metricDurationStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+    // Passed duration check
+    checkDurationIcon.textContent = "✓";
+    checkDurationIcon.className = "text-muted-foreground text-xs font-mono font-black";
+    metricDuration.className = "font-mono text-[10px] text-base-content font-medium";
   }
 
-  // Channel Count - 200 channels
-  metricChannels.textContent = "200 Ch";
-  metricChannelsStatus.textContent = "✓ Complete";
-  metricChannelsStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
-
-  // Audio status
+  // 3. Audio WAV Track Check
   if (hasAudio) {
-    metricAudio.textContent = "WAV Audio";
-    metricAudioStatus.textContent = "✓ OK";
-    metricAudioStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
+    metricAudio.textContent = "WAV OK";
+    checkAudioIcon.textContent = "✓";
+    checkAudioIcon.className = "text-muted-foreground text-xs font-mono font-black";
+    metricAudio.className = "font-mono text-[10px] text-base-content font-medium";
   } else {
     metricAudio.textContent = "Missing";
-    metricAudioStatus.textContent = "⚠ Warning";
-    metricAudioStatus.className = "text-[9px] text-warning font-medium mt-1 flex items-center gap-0.5";
-    isWarning = true;
-    warnings.push(`<strong>WARNING:</strong> No audio was transcoded (WAV file is missing). You will need to manually configure the audio file in xLights or provide an OGG audio file in your map.`);
+    checkAudioIcon.textContent = "✗";
+    checkAudioIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
+    metricAudio.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
+    isFailed = true;
+    warnings.push(`<strong>Audio track missing:</strong> No WAV audio was generated. Make sure your Beat Saber map contains an .ogg or .egg audio track so it can be transcoded.`);
   }
 
-  // Format validation
-  metricFormat.textContent = "Play-Ready FSEQ";
-  metricFormatStatus.textContent = "✓ Valid";
-  metricFormatStatus.className = "text-[9px] text-success font-medium mt-1 flex items-center gap-0.5";
-
-  // Set overall status badge
-  statusBadge.className = "badge badge-sm font-bold gap-1 text-[10px] px-2 py-1 uppercase rounded tracking-wider";
+  // Set overall status badge & top-left header icon
   if (isFailed) {
     statusBadge.textContent = "Failed";
-    statusBadge.classList.add("badge-error");
-  } else if (isWarning) {
-    statusBadge.textContent = "Warning";
-    statusBadge.classList.add("badge-warning");
+    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border select-none bg-red-500/10 text-red-500 border-red-500/20 dark:bg-red-500/5 dark:text-red-400/90 dark:border-red-500/10 transition-all-300";
+    
+    headerIconContainer.className = "flex items-center justify-center text-red-500/90 dark:text-red-400/90 shrink-0 transition-all-300";
+    headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m15 9-6 6M9 9l6 6"/></svg>`;
   } else {
-    statusBadge.textContent = "Pass";
-    statusBadge.classList.add("badge-success");
+    statusBadge.textContent = "Passed";
+    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border-0 select-none bg-neutral-200/60 text-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300 transition-all-300";
+    
+    headerIconContainer.className = "flex items-center justify-center text-success shrink-0 transition-all-300";
+    headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
   }
 
   // Populate warnings
   if (warnings.length > 0) {
     warningsContainer.classList.remove("hidden");
+    warningsContainer.className = "text-xs space-y-1.5 p-3 rounded-2xl bg-warning/5 border border-warning/15 text-warning font-medium";
+    
     warningsContainer.innerHTML = warnings
       .map(
         (w) => `
-        <div class="flex items-start gap-1.5 text-warning-content">
-          <svg class="w-3.5 h-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
+        <div class="flex items-start gap-1.5 shrink-0 leading-relaxed font-medium">
+          <span class="text-xs mt-0.5 select-none">⚠️</span>
           <span>${w}</span>
         </div>`
       )

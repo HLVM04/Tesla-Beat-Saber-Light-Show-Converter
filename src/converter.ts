@@ -60,7 +60,9 @@ export interface InfoData {
   _beatsPerMinute: number;
   _songFilename: string;
   _difficultyBeatmapSets: Array<{
-    _difficultyBeatmapSet?: string;
+    _beatmapCharacteristicName?: string;
+    beatmapCharacteristicName?: string;
+    _difficultyBeatmapSet?: string; // fallback
     _difficultyBeatmaps: Array<{
       _difficulty: string;
       _difficultyRank: number;
@@ -148,6 +150,7 @@ export class LightshowConverter {
     this.effectsData = {};
     this.lastBlockTime = 0;
 
+    this.calculateLastBlockTime();
     this.processNotes();
     this.processEvents();
 
@@ -160,6 +163,7 @@ export class LightshowConverter {
       this.effects = {};
       this.effectsData = {};
       this.lastBlockTime = 0;
+      this.calculateLastBlockTime();
       this.processNotes();
       this.processEvents();
     }
@@ -311,12 +315,31 @@ export class LightshowConverter {
     return this.lastBlockTime / 1000 + SequenceBufferTime;
   }
 
-  private processNotes(): void {
+  private calculateLastBlockTime(): void {
     const notes = this.mapData._notes || [];
     for (const note of notes) {
       const startTime = Math.floor(note._time / this.bpmPerMillisecond);
       if (startTime > this.lastBlockTime) {
         this.lastBlockTime = startTime;
+      }
+    }
+
+    const events = this.mapData._events || [];
+    for (const event of events) {
+      const startTime = Math.floor(event._time / this.bpmPerMillisecond);
+      if (startTime > this.lastBlockTime) {
+        this.lastBlockTime = startTime;
+      }
+    }
+  }
+
+  private processNotes(): void {
+    const notes = this.mapData._notes || [];
+    for (const note of notes) {
+      const startTime = Math.floor(note._time / this.bpmPerMillisecond);
+      const endTime = startTime + this.blinkDuration;
+      if (endTime > this.lastBlockTime) {
+        this.lastBlockTime = endTime;
       }
 
       const positionKey = `${note._lineLayer}${note._lineIndex}`;
@@ -325,7 +348,6 @@ export class LightshowConverter {
       if (!bindings) continue;
 
       for (const binding of bindings) {
-        const endTime = startTime + this.blinkDuration;
         const effect = `        <Effect ref="0" name="On" startTime="${startTime}" endTime="${endTime}" palette="0"/>`;
         if (!this.effects[binding]) {
           this.effects[binding] = [];
@@ -356,7 +378,11 @@ export class LightshowConverter {
     for (let index = 0; index < events.length; index++) {
       const event = events[index];
       const startTime = Math.floor(event._time / this.bpmPerMillisecond);
-      const endTime = this.calculateEventEndTime(index, event._type);
+      const endTime = this.calculateEventEndTime(index, event._type, startTime);
+
+      if (endTime > this.lastBlockTime) {
+        this.lastBlockTime = endTime;
+      }
 
       const bindings = this.getBindingsForEvent(event);
       if (!bindings) continue;
@@ -376,14 +402,14 @@ export class LightshowConverter {
     }
   }
 
-  private calculateEventEndTime(currentIndex: number, eventType: number): number {
+  private calculateEventEndTime(currentIndex: number, eventType: number, startTime: number): number {
     const events = this.mapData._events || [];
     for (let i = currentIndex + 1; i < events.length; i++) {
       if (events[i]._type === eventType) {
         return Math.floor(events[i]._time / this.bpmPerMillisecond);
       }
     }
-    return this.lastBlockTime;
+    return Math.max(startTime + this.blinkDuration, this.lastBlockTime);
   }
 
   private getBindingsForEvent(event: Event): string[] | null {
