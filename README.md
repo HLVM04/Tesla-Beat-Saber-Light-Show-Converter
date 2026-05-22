@@ -56,7 +56,7 @@ To run the web app on your local machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/HLVM04/TeslaBeatMapper.git
+   git clone https://github.com/HLVM04/Tesla-Beat-Mapper.git
    cd TeslaBeatMapper
    ```
 
