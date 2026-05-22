@@ -33,6 +33,9 @@ export class AppController {
       this.resetUI(),
     );
     this.elements.btnResetApp.addEventListener("click", () => this.resetUI());
+    this.elements.btnBackToConfig.addEventListener("click", () =>
+      this.goBackToConfig(),
+    );
 
     setUIState(this.elements, "upload");
   }
@@ -420,6 +423,11 @@ export class AppController {
   private async triggerFileDownload(blob: Blob, filename: string) {
     const { triggerDownload } = await import("./downloads");
     triggerDownload(blob, filename);
+  }
+
+  private goBackToConfig() {
+    this.visualizerController?.cleanup();
+    setUIState(this.elements, "config");
   }
 
   private resetUI() {

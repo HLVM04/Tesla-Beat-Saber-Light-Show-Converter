@@ -8,12 +8,16 @@
             href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>
-            Tesla Light Show Converter — Beat Saber Maps to Tesla Sequence
-        </title>
+        <title>Tesla Beat Mapper — Beat Saber Maps to Tesla Sequence</title>
         <meta
             name="description"
             content="Completely free client-side tool to convert Beat Saber map files into physical Tesla Light Shows using your browser."
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Geist+Mono:wght@100..900&display=swap"
+            rel="stylesheet"
         />
         <link rel="stylesheet" href="/src/style.css" />
         <script>
@@ -40,84 +44,81 @@
         </script>
     </head>
     <body class="selection:bg-neutral/10">
-        <!-- Header -->
-        <header
-            class="w-full bg-base-100/10 backdrop-blur-md sticky top-0 z-50"
-        >
-            <div
-                class="container mx-auto px-6 h-16 flex items-center justify-between"
+        <!-- Floating Theme Toggle -->
+        <div class="fixed top-4 right-4 z-50 md:top-6 md:right-6">
+            <label
+                class="btn btn-ghost btn-circle btn-sm cursor-pointer glass-panel flex items-center justify-center w-9 h-9 shadow-sm"
+                title="Toggle Theme"
             >
-                <div class="flex items-center gap-2.5">
-                    <span class="text-lg font-black tracking-tight select-none"
-                        >⚡ TESLA<span class="font-normal text-muted-foreground"
-                            >LIGHTSHOW</span
-                        ></span
+                <span class="swap swap-rotate w-4 h-4">
+                    <input type="checkbox" id="theme-toggle" />
+                    <!-- Sun Icon -->
+                    <svg
+                        class="swap-on fill-current w-4 h-4 overflow-visible"
+                        width="16"
+                        height="16"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
                     >
-                    <div
-                        class="badge badge-sm badge-outline border-base-300 text-[9px] uppercase font-mono px-2 py-0.5 rounded-full select-none"
+                        <path
+                            d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"
+                        />
+                    </svg>
+                    <!-- Moon Icon -->
+                    <svg
+                        class="swap-off fill-current w-4 h-4 overflow-visible"
+                        width="16"
+                        height="16"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
                     >
-                        v2.1 Client
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <!-- Theme Toggle -->
-                    <label
-                        class="btn btn-ghost btn-circle btn-sm cursor-pointer"
-                    >
-                        <span class="swap swap-rotate w-4 h-4">
-                            <input type="checkbox" id="theme-toggle" />
-                            <!-- Sun Icon -->
-                            <svg
-                                class="swap-on fill-current w-4 h-4 overflow-visible"
-                                width="16"
-                                height="16"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"
-                                />
-                            </svg>
-                            <!-- Moon Icon -->
-                            <svg
-                                class="swap-off fill-current w-4 h-4 overflow-visible"
-                                width="16"
-                                height="16"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"
-                                />
-                            </svg>
-                        </span>
-                    </label>
-                </div>
-            </div>
-        </header>
+                        <path
+                            d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"
+                        />
+                    </svg>
+                </span>
+            </label>
+        </div>
 
         <!-- Main Container -->
         <main
-            class="flex-grow container mx-auto px-4 py-8 max-w-5xl flex flex-col gap-10"
+            class="flex-grow container mx-auto px-4 pt-3 pb-8 max-w-5xl flex flex-col gap-8"
         >
-            <!-- App Title Section -->
-            <section class="text-center space-y-3">
-                <h1
-                    class="text-3xl md:text-4xl font-black tracking-tight leading-tight"
+            <!-- App Title Section with Cyber Backdrop Glow -->
+            <section
+                class="relative text-center space-y-3 mt-8 md:mt-2 select-none py-2"
+            >
+                <!-- Glowing ambient background orbs for sci-fi atmosphere -->
+                <div
+                    class="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none overflow-visible"
                 >
-                    Convert Beat Saber Maps<br />into Tesla Light Shows
+                    <div
+                        class="w-80 h-32 bg-gradient-to-r from-[#ff1751]/10 via-[#f59e0b]/5 to-[#00f0ff]/10 blur-[60px] rounded-full opacity-70 animate-pulse-glow"
+                    ></div>
+                </div>
+
+                <h1
+                    class="text-4xl md:text-5xl font-black tracking-tight leading-tight flex items-center justify-center gap-2 flex-wrap"
+                >
+                    <span class="brand-tesla tracking-tighter">TESLA</span>
+                    <span class="brand-beat tracking-tight">BEAT</span>
+                    <span class="brand-mapper tracking-tight">MAPPER</span>
                 </h1>
+                <p
+                    class="text-xs md:text-sm text-muted-foreground font-semibold tracking-widest uppercase"
+                >
+                    Convert Beat Saber Maps into Tesla Light Shows
+                </p>
             </section>
 
             <!-- Step 1: Initial Upload State -->
             <div
                 id="upload-card"
-                class="glass-panel p-6 rounded-3xl max-w-xl mx-auto w-full transition-all duration-300"
+                class="max-w-xl mx-auto w-full transition-all duration-300 flex flex-col gap-4"
             >
                 <div
                     id="drop-zone"
-                    class="dropzone-pill rounded-2xl p-10 flex flex-col items-center justify-center gap-4 cursor-pointer"
+                    class="dropzone-pill rounded-3xl p-12 flex flex-col items-center justify-center gap-4 cursor-pointer"
                 >
                     <input
                         type="file"
@@ -160,11 +161,7 @@
                         <p
                             class="font-bold text-sm tracking-tight text-base-content"
                         >
-                            Drag & drop your beatmap ZIP or folder
-                        </p>
-                        <p class="text-[11px] text-muted-foreground">
-                            Accepts map archive .zip or extracted song
-                            directories
+                            Drag & drop your beatmap
                         </p>
                     </div>
 
@@ -186,6 +183,27 @@
                         </button>
                     </div>
                 </div>
+
+                <p
+                    class="text-center text-[10px] sm:text-[11px] text-muted-foreground select-none"
+                >
+                    Don't have a map? Download custom beatmaps on
+                    <a
+                        href="https://beatsaver.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="link link-primary font-bold hover:underline transition-all"
+                        >BeatSaver</a
+                    >
+                    or
+                    <a
+                        href="https://bsaber.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="link link-primary font-bold hover:underline transition-all"
+                        >BeastSaber</a
+                    >.
+                </p>
             </div>
 
             <!-- Step 2: Song Info & Configuration State (Morphed) -->
@@ -193,37 +211,29 @@
                 id="config-card"
                 class="hidden glass-panel p-6 rounded-3xl max-w-2xl mx-auto w-full transition-all duration-300 space-y-6"
             >
-                <!-- Morphed Information Module -->
+                <!-- Morphed Information Module (with absolute-positioned back button inside padding) -->
                 <div
                     id="map-info-card"
-                    class="relative flex flex-col md:flex-row gap-6 p-5 rounded-2xl bg-base-200/25"
+                    class="relative flex flex-col md:flex-row gap-6 p-5 pt-14 md:pt-5 md:pl-14 rounded-2xl bg-base-200/25"
                 >
-                    <!-- Tucked away Upload Different Button in the corner -->
                     <button
                         id="btn-upload-different"
-                        class="btn btn-ghost btn-circle btn-xs absolute top-4 right-4"
+                        class="btn btn-ghost btn-circle btn-sm absolute top-4 left-4 border border-base-300 shadow-sm z-10"
                         title="Upload another map"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            width="13"
-                            height="13"
+                            width="16"
+                            height="16"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2.5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            class="opacity-60 hover:opacity-100"
                         >
-                            <path
-                                d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-                            />
-                            <path d="M3 3v5h5" />
-                            <path
-                                d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
-                            />
-                            <path d="M16 16h5v5" />
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
                         </svg>
                     </button>
 
@@ -334,7 +344,7 @@
             <!-- Step 3: Beautiful Conversion Progress Bar -->
             <div
                 id="progress-card"
-                class="hidden glass-panel p-8 max-w-md mx-auto w-full text-center space-y-6 transition-all duration-300"
+                class="hidden glass-panel p-8 rounded-3xl max-w-md mx-auto w-full text-center space-y-6 transition-all duration-300"
             >
                 <div
                     id="progress-status"
@@ -368,10 +378,34 @@
                     class="lg:col-span-7 xl:col-span-8 space-y-4"
                 >
                     <div class="flex items-center justify-between px-2">
-                        <span
-                            class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-                            >3D Light Show Preview</span
-                        >
+                        <div class="flex items-center gap-3">
+                            <button
+                                id="btn-back-to-config"
+                                class="btn btn-ghost btn-circle btn-sm border border-base-300 shadow-sm"
+                                title="Back to difficulty selection"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline
+                                        points="12 19 5 12 12 5"
+                                    ></polyline>
+                                </svg>
+                            </button>
+                            <span
+                                class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                                >3D Preview</span
+                            >
+                        </div>
                         <div class="flex items-center gap-3 select-none">
                             <div
                                 id="car-model-tabs"
@@ -805,6 +839,7 @@
                     </div>
                 </div>
             </div>
+            <!-- results-and-visualizer-container closing tag -->
 
             <!-- Hidden Developer / Background elements to satisfy old main.ts logs queries and prevent DOM errors -->
             <div id="log-zone" class="hidden">
@@ -814,10 +849,11 @@
 
             <!-- FAQ Accordion section -->
             <section
+                id="tutorial-section"
                 class="space-y-4 max-w-3xl mx-auto w-full pt-4 select-none"
             >
                 <h2 class="text-lg font-black tracking-tight text-center">
-                    How to Run it in Your Tesla
+                    How to Run Your Custom Light Show
                 </h2>
 
                 <div class="grid md:grid-cols-3 gap-6">
@@ -833,16 +869,15 @@
                             >
                             <span
                                 class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0"
-                                >Download Pack</span
+                                >Map & Convert</span
                             >
                         </div>
                         <p
                             class="text-[11px] text-muted-foreground leading-relaxed"
                         >
-                            Generate and download the
-                            <b>Bundle ZIP</b> containing
-                            <b>lightshow.fseq</b> and
-                            <b>lightshow.wav</b> directly.
+                            Drag & drop your Beat Saber map ZIP or folder.
+                            Choose a difficulty, preview the 3D show in
+                            real-time, and generate your <b>Bundle ZIP</b>.
                         </p>
                     </div>
 
@@ -864,9 +899,10 @@
                         <p
                             class="text-[11px] text-muted-foreground leading-relaxed"
                         >
-                            Extract the files and copy them into a folder named
-                            <b>LightShow</b> at the root of a FAT32/exFAT USB
-                            flash drive.
+                            Extract your files (`lightshow.fseq` and
+                            `lightshow.wav`) and copy them into a folder exactly
+                            named <b>LightShow</b> at the root of a FAT32 or
+                            exFAT USB flash drive.
                         </p>
                     </div>
 
@@ -882,14 +918,16 @@
                             >
                             <span
                                 class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0"
-                                >Plug & Play</span
+                                >Play in Tesla</span
                             >
                         </div>
                         <p
                             class="text-[11px] text-muted-foreground leading-relaxed"
                         >
-                            Plug the USB into your Tesla Toybox, select Light
-                            Show, step out, close the doors, and watch the show!
+                            Plug the USB into your Tesla. Navigate to
+                            <b>Toybox</b> &rarr; <b>Light Show</b>. Select the
+                            USB custom show option, step out of the car, close
+                            the doors, and enjoy!
                         </p>
                     </div>
                 </div>
@@ -898,12 +936,19 @@
 
         <!-- Footer -->
         <footer class="py-6 mt-12 bg-base-200/10 text-center select-none">
-            <div class="container mx-auto px-4 flex flex-col gap-2">
+            <div
+                class="container mx-auto px-4 flex flex-col items-center gap-2.5"
+            >
                 <p
                     class="text-[10px] text-muted-foreground font-mono font-medium"
                 >
                     Handcrafted in TypeScript & Bun. Made by HLVM.
                 </p>
+                <div
+                    class="badge badge-sm badge-outline border-base-300 text-[9px] uppercase font-mono px-2.5 py-0.5 rounded-full text-muted-foreground select-none"
+                >
+                    v2.1
+                </div>
             </div>
         </footer>
 

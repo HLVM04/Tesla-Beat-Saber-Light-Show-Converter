@@ -7,17 +7,13 @@ export interface OutputBundleInput {
 }
 
 export async function createOutputZip({
-  generatedXsq,
   generatedFseq,
   generatedWav,
 }: OutputBundleInput): Promise<Blob | null> {
-  if (!generatedXsq) return null;
+  if (!generatedFseq) return null;
 
   const outZip = new JSZip();
-  if (generatedFseq) {
-    outZip.file("lightshow.fseq", generatedFseq);
-  }
-  outZip.file("lightshow.xsq", generatedXsq);
+  outZip.file("lightshow.fseq", generatedFseq);
   if (generatedWav) {
     outZip.file("lightshow.wav", generatedWav);
   }

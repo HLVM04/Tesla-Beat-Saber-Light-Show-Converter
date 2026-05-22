@@ -22,6 +22,8 @@ export interface AppElements {
   configCard: HTMLElement;
   progressCard: HTMLElement;
   resultsContainer: HTMLElement;
+  btnBackToConfig: HTMLButtonElement;
+  tutorialSection: HTMLElement;
   btnUploadDifferent: HTMLElement;
   btnResetApp: HTMLElement;
   visualizerCanvas: HTMLCanvasElement;
@@ -83,6 +85,8 @@ export function getAppElements(): AppElements {
     configCard: requiredElement("config-card"),
     progressCard: requiredElement("progress-card"),
     resultsContainer: requiredElement("results-and-visualizer-container"),
+    btnBackToConfig: requiredElement<HTMLButtonElement>("btn-back-to-config"),
+    tutorialSection: requiredElement("tutorial-section"),
     btnUploadDifferent: requiredElement("btn-upload-different"),
     btnResetApp: requiredElement("btn-reset-app"),
     visualizerCanvas: requiredElement<HTMLCanvasElement>("visualizer-canvas"),

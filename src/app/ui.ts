@@ -6,6 +6,7 @@ export function setUIState(elements: AppElements, state: UIState) {
   elements.configCard.classList.toggle("hidden", state !== "config");
   elements.progressCard.classList.toggle("hidden", state !== "progress");
   elements.resultsContainer.classList.toggle("hidden", state !== "done");
+  elements.tutorialSection.classList.toggle("hidden", state === "progress");
 }
 
 export function setupTheme(elements: AppElements, onThemeChanged: () => void) {
