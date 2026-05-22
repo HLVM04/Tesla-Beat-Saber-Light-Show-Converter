@@ -5,7 +5,7 @@
 ### Convert Beat Saber maps into Tesla Light Shows, in the browser.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://vitejs.dev/)
+[![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
 [![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.design&logoColor=white)](https://threejs.org/)
 [![Tesla](https://img.shields.io/badge/Tesla-CC0000?style=for-the-badge&logo=tesla&logoColor=white)](https://www.tesla.com/)
 [![Beat Saber](https://img.shields.io/badge/Beat%20Saber-FF6B6B?style=for-the-badge&logo=oculus&logoColor=white)](https://beatsaber.com/)
@@ -50,7 +50,7 @@ Tesla Beat Mapper parses the structure of Beat Saber beat maps and maps game act
 To run the web app on your local machine:
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18+) or [Bun](https://bun.sh/)
+- [Bun](https://bun.sh/)
 
 ### Quick Start
 
@@ -62,15 +62,11 @@ To run the web app on your local machine:
 
 2. **Install dependencies:**
    ```bash
-   npm install
-   # or with bun
    bun install
    ```
 
 3. **Launch the development server:**
    ```bash
-   npm run dev
-   # or with bun
    bun run dev
    ```
 
