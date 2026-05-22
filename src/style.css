@@ -390,3 +390,94 @@ body {
   display: none !important;
 }
 
+/* Volume Slider Container & Hover Effects */
+.volume-container {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 32px; /* width of button + small padding */
+  transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 9999px;
+  background-color: transparent;
+  padding: 0;
+}
+
+.volume-container:hover {
+  max-width: 110px; /* button + slider wrapper */
+  background-color: var(--color-base-200);
+}
+
+.volume-slider-wrapper {
+  width: 70px;
+  padding-right: 10px;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.volume-container:hover .volume-slider-wrapper {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Volume Slider Input Styling */
+#slider-volume {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--color-base-300);
+  border-radius: 9999px;
+  cursor: pointer;
+  outline: none;
+  border: none !important;
+}
+
+#slider-volume::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  background: var(--color-base-300);
+  border-radius: 9999px;
+  border: none;
+}
+
+#slider-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  margin-top: -3px; /* Center the thumb vertically */
+  transition: transform 0.1s ease;
+  border: none;
+}
+
+#slider-volume:hover::-webkit-slider-thumb {
+  transform: scale(1.3);
+}
+
+/* Firefox support */
+#slider-volume::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: var(--color-base-300);
+  border-radius: 9999px;
+  border: none;
+}
+
+#slider-volume::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  border: none;
+  transition: transform 0.1s ease;
+}
+
+#slider-volume:hover::-moz-range-thumb {
+  transform: scale(1.3);
+}
+

@@ -1,399 +1,912 @@
 <!doctype html>
 <html lang="en" data-theme="shadcn">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tesla Light Show Converter — Beat Saber Maps to Tesla Sequence</title>
-    <meta name="description" content="Completely free client-side tool to convert Beat Saber map files into physical Tesla Light Shows using your browser." />
-    <link rel="stylesheet" href="/src/style.css" />
-    <script>
-      (function() {
-        const savedTheme = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        if (savedTheme === "shadcn-dark" || (!savedTheme && prefersDark)) {
-          document.documentElement.setAttribute("data-theme", "shadcn-dark");
-        } else {
-          document.documentElement.setAttribute("data-theme", "shadcn");
-        }
-      })();
-    </script>
-  </head>
-  <body class="selection:bg-neutral/10">
-    <!-- Header -->
-    <header class="w-full bg-base-100/10 backdrop-blur-md sticky top-0 z-50">
-      <div class="container mx-auto px-6 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <span class="text-lg font-black tracking-tight select-none">⚡ TESLA<span class="font-normal text-muted-foreground">LIGHTSHOW</span></span>
-          <div class="badge badge-sm badge-outline border-base-300 text-[9px] uppercase font-mono px-2 py-0.5 rounded-full select-none">v2.1 Client</div>
-        </div>
-        
-        <div class="flex items-center gap-4">
-          <!-- Theme Toggle -->
-          <label class="btn btn-ghost btn-circle btn-sm cursor-pointer">
-            <span class="swap swap-rotate w-4 h-4">
-              <input type="checkbox" id="theme-toggle" />
-              <!-- Sun Icon -->
-              <svg class="swap-on fill-current w-4 h-4 overflow-visible" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
-              <!-- Moon Icon -->
-              <svg class="swap-off fill-current w-4 h-4 overflow-visible" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
-            </span>
-          </label>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl flex flex-col gap-10">
-      
-      <!-- App Title Section -->
-      <section class="text-center space-y-3">
-        <h1 class="text-3xl md:text-4xl font-black tracking-tight leading-tight">Convert Beat Saber Maps<br/>into Tesla Light Shows</h1>
-        <p class="text-muted-foreground text-xs max-w-sm mx-auto leading-relaxed font-medium">
-          Create dazzling choreographies for your car! Processes 100% locally inside your browser. No data leaves your machine.
-        </p>
-      </section>
-
-      <!-- Step 1: Initial Upload State -->
-      <div id="upload-card" class="glass-panel p-6 rounded-3xl max-w-xl mx-auto w-full transition-all duration-300">
-        <div id="drop-zone" class="dropzone-pill rounded-2xl p-10 flex flex-col items-center justify-center gap-4 cursor-pointer">
-          <input type="file" id="zip-input" accept=".zip" class="hidden" />
-          <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
-          
-          <div class="p-3.5 bg-base-100 rounded-full shadow-sm border border-base-200 text-muted-foreground">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-          </div>
-          
-          <div class="text-center space-y-1">
-            <p class="font-bold text-sm tracking-tight text-base-content">Drag & drop your beatmap ZIP or folder</p>
-            <p class="text-[11px] text-muted-foreground">Accepts map archive .zip or extracted song directories</p>
-          </div>
-          
-          <div class="flex items-center gap-2 mt-2">
-            <button id="btn-browse-zip" class="btn btn-xs btn-outline px-4 py-2 rounded-full font-bold">Browse ZIP</button>
-            <span class="text-[9px] text-muted-foreground font-mono">or</span>
-            <button id="btn-browse-folder" class="btn btn-xs btn-outline px-4 py-2 rounded-full font-bold">Browse Folder</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2: Song Info & Configuration State (Morphed) -->
-      <div id="config-card" class="hidden glass-panel p-6 rounded-3xl max-w-2xl mx-auto w-full transition-all duration-300 space-y-6">
-        <!-- Morphed Information Module -->
-        <div id="map-info-card" class="relative flex flex-col md:flex-row gap-6 p-5 rounded-2xl bg-base-200/25">
-          <!-- Tucked away Upload Different Button in the corner -->
-          <button id="btn-upload-different" class="btn btn-ghost btn-circle btn-xs absolute top-4 right-4" title="Upload another map">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60 hover:opacity-100"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-          </button>
-          
-          <div class="w-28 h-28 md:w-32 md:h-32 rounded-2xl bg-base-300 shadow-md overflow-hidden flex items-center justify-center flex-shrink-0">
-            <img id="cover-preview" src="" class="w-full h-full object-cover hidden" />
-            <div id="cover-placeholder" class="text-3xl text-muted-foreground/60 font-semibold select-none">🎵</div>
-          </div>
-          
-          <div class="flex-grow flex flex-col justify-center gap-2">
-            <div>
-              <span class="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-wider">Loaded Beatmap</span>
-              <h3 id="song-title" class="font-extrabold text-xl tracking-tight leading-tight mt-0.5">Song Title</h3>
-              <p id="song-sub" class="text-xs font-semibold text-muted-foreground mt-0.5">Subname</p>
-              <p id="song-artist" class="text-xs text-muted-foreground/80 mt-1 font-medium">Artist Name</p>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-2 text-[10px] font-mono mt-1 select-none">
-              <span id="map-bpm" class="badge badge-secondary badge-sm px-2.5 py-0.5 rounded-full font-sans font-semibold">BPM: 0</span>
-              <span id="map-version-badge" class="badge badge-outline badge-sm border-base-300 px-2 py-0.5 rounded-full text-muted-foreground">Format: v2</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Beatmap Type and Difficulty Selectors -->
-        <div id="config-zone" class="flex flex-col gap-4">
-          <!-- Dynamic Type Selector (Visible only if multiple map sets/types exist) -->
-          <div id="type-tabs-container" class="hidden flex flex-col gap-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Select Type</span>
-            <div id="type-tabs" class="flex flex-wrap gap-1.5 justify-center p-1 bg-base-200/40 rounded-full mx-auto w-fit select-none">
-              <!-- Dynamic type buttons populated by JS -->
-            </div>
-          </div>
-
-          <!-- Dynamic Difficulty Selector (Tab-bar Style) -->
-          <div class="flex flex-col gap-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Select Difficulty</span>
-            <div id="difficulty-tabs" class="flex flex-wrap gap-1.5 justify-center p-1 bg-base-200/40 rounded-full mx-auto w-fit select-none">
-              <!-- Dynamic difficulty buttons populated by JS -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Primary Generate Action -->
-        <div class="flex justify-center pt-2">
-          <button id="btn-convert" class="btn btn-primary btn-wide shadow-md font-semibold tracking-wide h-10 min-h-0 text-xs rounded-full">
-            Generate Light Show
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 3: Beautiful Conversion Progress Bar -->
-      <div id="progress-card" class="hidden glass-panel p-8 max-w-md mx-auto w-full text-center space-y-6 transition-all duration-300">
-        <div id="progress-status" class="text-xs font-semibold tracking-wider uppercase text-muted-foreground animate-pulse">Processing metadata...</div>
-        <div class="w-full bg-base-200 h-2 rounded-full overflow-hidden p-0.5 shadow-inner">
-          <div id="progress-bar-sweep" class="progress-sweep bg-primary h-full rounded-full w-0"></div>
-        </div>
-        <div class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/45 select-none">Generating locally in browser</div>
-      </div>
-
-      <!-- Step 4: Ready & Done State (Visualizer, Downloads, and Validation) -->
-      <div id="results-and-visualizer-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start fade-in-up">
-        
-        <!-- Left Side: 3D Preview Panel -->
-        <div id="visualizer-zone" class="lg:col-span-7 xl:col-span-8 space-y-4">
-          <div class="flex items-center justify-between px-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">3D Light Show Preview</span>
-            <div class="flex items-center gap-3 select-none">
-              <div id="car-model-tabs" class="flex p-1 bg-base-200/60 rounded-full select-none gap-1 items-center w-fit">
-                <button class="car-tab active" data-car="Model_S">Model S</button>
-                <button class="car-tab" data-car="Cybertruck">Cybertruck</button>
-              </div>
-              <button id="btn-reset-camera" class="btn btn-xs px-3 py-1 font-sans font-bold text-[9px] rounded-full h-6 min-h-0 border-0">
-                Reset View
-              </button>
-            </div>
-          </div>
-
-          <!-- 3D Canvas Area -->
-          <div class="relative w-full rounded-3xl overflow-hidden shadow-2xl min-h-[340px] sm:min-h-[440px] flex items-center justify-center bg-neutral-900 border-0">
-            <canvas id="visualizer-canvas" class="absolute top-0 left-0 w-full h-full block touch-none"></canvas>
-            <div id="visualizer-overlay" class="absolute inset-0 bg-base-100/50 backdrop-blur-sm flex flex-col items-center justify-center gap-3 hidden">
-              <div class="loading loading-spinner loading-md text-primary"></div>
-              <span class="text-xs text-muted-foreground font-medium">Preparing visualizer...</span>
-            </div>
-          </div>
-
-          <!-- Playback Controls Scrubber -->
-          <div class="glass-panel p-4 rounded-3xl flex flex-col gap-3">
-
-            <!-- Top Controls Row -->
-            <div class="flex flex-wrap items-center justify-between gap-4 w-full mt-1">
-              <!-- Play / Pause / Mute & Time Display -->
-              <div class="flex items-center gap-2 select-none">
-                <button id="btn-play-pause" class="btn btn-circle btn-primary btn-sm w-9 h-9 flex items-center justify-center shadow-md border-0" aria-label="Play/Pause">
-                  <!-- Play Icon -->
-                  <svg id="icon-play" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  <!-- Pause Icon (hidden by default) -->
-                  <svg id="icon-pause" class="w-3.5 h-3.5 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                
-                <button id="btn-mute" class="btn btn-circle btn-ghost btn-sm w-8 h-8 flex items-center justify-center border-0" aria-label="Mute/Unmute">
-                  <!-- Speaker High Icon -->
-                  <svg id="icon-volume-on" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                  <!-- Mute Icon (hidden by default) -->
-                  <svg id="icon-volume-off" class="w-3.5 h-3.5 fill-current hidden" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-                </button>
-
-                <div class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground border-l border-base-300 pl-3">
-                  <span id="time-current" class="font-mono text-base-content select-none">0:00</span>
-                  <span class="opacity-30">/</span>
-                  <span id="time-duration" class="font-mono select-none">0:00</span>
+    <head>
+        <meta charset="UTF-8" />
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            Tesla Light Show Converter — Beat Saber Maps to Tesla Sequence
+        </title>
+        <meta
+            name="description"
+            content="Completely free client-side tool to convert Beat Saber map files into physical Tesla Light Shows using your browser."
+        />
+        <link rel="stylesheet" href="/src/style.css" />
+        <script>
+            (function () {
+                const savedTheme = localStorage.getItem("theme");
+                const prefersDark = window.matchMedia(
+                    "(prefers-color-scheme: dark)",
+                ).matches;
+                if (
+                    savedTheme === "shadcn-dark" ||
+                    (!savedTheme && prefersDark)
+                ) {
+                    document.documentElement.setAttribute(
+                        "data-theme",
+                        "shadcn-dark",
+                    );
+                } else {
+                    document.documentElement.setAttribute(
+                        "data-theme",
+                        "shadcn",
+                    );
+                }
+            })();
+        </script>
+    </head>
+    <body class="selection:bg-neutral/10">
+        <!-- Header -->
+        <header
+            class="w-full bg-base-100/10 backdrop-blur-md sticky top-0 z-50"
+        >
+            <div
+                class="container mx-auto px-6 h-16 flex items-center justify-between"
+            >
+                <div class="flex items-center gap-2.5">
+                    <span class="text-lg font-black tracking-tight select-none"
+                        >⚡ TESLA<span class="font-normal text-muted-foreground"
+                            >LIGHTSHOW</span
+                        ></span
+                    >
+                    <div
+                        class="badge badge-sm badge-outline border-base-300 text-[9px] uppercase font-mono px-2 py-0.5 rounded-full select-none"
+                    >
+                        v2.1 Client
+                    </div>
                 </div>
-              </div>
 
-              <!-- Trim details and reset button -->
-              <div class="flex items-center gap-3">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Trimmed:</span>
-                  <span id="trim-range-label" class="text-[10px] font-mono text-base-content font-semibold truncate">0:00 - 0:00</span>
+                <div class="flex items-center gap-4">
+                    <!-- Theme Toggle -->
+                    <label
+                        class="btn btn-ghost btn-circle btn-sm cursor-pointer"
+                    >
+                        <span class="swap swap-rotate w-4 h-4">
+                            <input type="checkbox" id="theme-toggle" />
+                            <!-- Sun Icon -->
+                            <svg
+                                class="swap-on fill-current w-4 h-4 overflow-visible"
+                                width="16"
+                                height="16"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"
+                                />
+                            </svg>
+                            <!-- Moon Icon -->
+                            <svg
+                                class="swap-off fill-current w-4 h-4 overflow-visible"
+                                width="16"
+                                height="16"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"
+                                />
+                            </svg>
+                        </span>
+                    </label>
                 </div>
-                <button id="btn-reset-trim" class="btn btn-ghost btn-xs text-[9px] h-6 min-h-0 px-3 rounded-full uppercase font-bold text-muted-foreground border border-base-300 hover:bg-base-200">
-                  Reset Trim
-                </button>
-              </div>
             </div>
+        </header>
 
-            <!-- Integrated Timeline Container (Flat aesthetic, no glow/shadows) -->
-            <div id="integrated-timeline-container" class="relative w-full h-16 rounded-xl bg-base-200/50 border border-base-300 overflow-hidden cursor-crosshair select-none">
-              <!-- Command Density Canvas -->
-              <canvas id="timeline-density-canvas" class="absolute inset-0 w-full h-full block pointer-events-none"></canvas>
+        <!-- Main Container -->
+        <main
+            class="flex-grow container mx-auto px-4 py-8 max-w-5xl flex flex-col gap-10"
+        >
+            <!-- App Title Section -->
+            <section class="text-center space-y-3">
+                <h1
+                    class="text-3xl md:text-4xl font-black tracking-tight leading-tight"
+                >
+                    Convert Beat Saber Maps<br />into Tesla Light Shows
+                </h1>
+            </section>
 
-              <!-- Left and Right Greyed-out flat overlays -->
-              <div id="timeline-left-overlay" class="absolute top-0 left-0 h-full bg-base-100/50 pointer-events-none"></div>
-              <div id="timeline-right-overlay" class="absolute top-0 right-0 h-full bg-base-100/50 pointer-events-none"></div>
+            <!-- Step 1: Initial Upload State -->
+            <div
+                id="upload-card"
+                class="glass-panel p-6 rounded-3xl max-w-xl mx-auto w-full transition-all duration-300"
+            >
+                <div
+                    id="drop-zone"
+                    class="dropzone-pill rounded-2xl p-10 flex flex-col items-center justify-center gap-4 cursor-pointer"
+                >
+                    <input
+                        type="file"
+                        id="zip-input"
+                        accept=".zip"
+                        class="hidden"
+                    />
+                    <input
+                        type="file"
+                        id="folder-input"
+                        webkitdirectory
+                        directory
+                        multiple
+                        class="hidden"
+                    />
 
-              <!-- Active Highlight Range -->
-              <div id="timeline-active-region" class="absolute top-0 h-full border-l border-r border-primary/20 pointer-events-none"></div>
+                    <div
+                        class="p-3.5 bg-base-100 rounded-full shadow-sm border border-base-200 text-muted-foreground"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" x2="12" y1="3" y2="15" />
+                        </svg>
+                    </div>
 
-              <!-- Seeker Line (Playhead) - simple solid 2px blue line, absolutely flat, no knobs, glows, or shadows -->
-              <div id="timeline-playhead" class="absolute top-0 w-0.5 h-full pointer-events-none z-10" style="background-color: #3b82f6 !important;">
-              </div>
+                    <div class="text-center space-y-1">
+                        <p
+                            class="font-bold text-sm tracking-tight text-base-content"
+                        >
+                            Drag & drop your beatmap ZIP or folder
+                        </p>
+                        <p class="text-[11px] text-muted-foreground">
+                            Accepts map archive .zip or extracted song
+                            directories
+                        </p>
+                    </div>
 
-              <!-- Trim Bracket Handles - clean and flat, no shadows -->
-              <div id="trim-handle-start" class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20">
-                <div class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100">
-                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
-                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <button
+                            id="btn-browse-zip"
+                            class="btn btn-xs btn-outline px-4 py-2 rounded-full font-bold"
+                        >
+                            Browse ZIP
+                        </button>
+                        <span class="text-[9px] text-muted-foreground font-mono"
+                            >or</span
+                        >
+                        <button
+                            id="btn-browse-folder"
+                            class="btn btn-xs btn-outline px-4 py-2 rounded-full font-bold"
+                        >
+                            Browse Folder
+                        </button>
+                    </div>
                 </div>
-              </div>
-              <div id="trim-handle-end" class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20">
-                <div class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100">
-                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
-                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+            </div>
+
+            <!-- Step 2: Song Info & Configuration State (Morphed) -->
+            <div
+                id="config-card"
+                class="hidden glass-panel p-6 rounded-3xl max-w-2xl mx-auto w-full transition-all duration-300 space-y-6"
+            >
+                <!-- Morphed Information Module -->
+                <div
+                    id="map-info-card"
+                    class="relative flex flex-col md:flex-row gap-6 p-5 rounded-2xl bg-base-200/25"
+                >
+                    <!-- Tucked away Upload Different Button in the corner -->
+                    <button
+                        id="btn-upload-different"
+                        class="btn btn-ghost btn-circle btn-xs absolute top-4 right-4"
+                        title="Upload another map"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="opacity-60 hover:opacity-100"
+                        >
+                            <path
+                                d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                            />
+                            <path d="M3 3v5h5" />
+                            <path
+                                d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
+                            />
+                            <path d="M16 16h5v5" />
+                        </svg>
+                    </button>
+
+                    <div
+                        class="w-28 h-28 md:w-32 md:h-32 rounded-2xl bg-base-300 shadow-md overflow-hidden flex items-center justify-center flex-shrink-0"
+                    >
+                        <img
+                            id="cover-preview"
+                            src=""
+                            class="w-full h-full object-cover hidden"
+                        />
+                        <div
+                            id="cover-placeholder"
+                            class="text-3xl text-muted-foreground/60 font-semibold select-none"
+                        >
+                            🎵
+                        </div>
+                    </div>
+
+                    <div class="flex-grow flex flex-col justify-center gap-2">
+                        <div>
+                            <span
+                                class="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-wider"
+                                >Loaded Beatmap</span
+                            >
+                            <h3
+                                id="song-title"
+                                class="font-extrabold text-xl tracking-tight leading-tight mt-0.5"
+                            >
+                                Song Title
+                            </h3>
+                            <p
+                                id="song-sub"
+                                class="text-xs font-semibold text-muted-foreground mt-0.5"
+                            >
+                                Subname
+                            </p>
+                            <p
+                                id="song-artist"
+                                class="text-xs text-muted-foreground/80 mt-1 font-medium"
+                            >
+                                Artist Name
+                            </p>
+                        </div>
+
+                        <div
+                            class="flex flex-wrap items-center gap-2 text-[10px] font-mono mt-1 select-none"
+                        >
+                            <span
+                                id="map-bpm"
+                                class="badge badge-secondary badge-sm px-2.5 py-0.5 rounded-full font-sans font-semibold"
+                                >BPM: 0</span
+                            >
+                            <span
+                                id="map-version-badge"
+                                class="badge badge-outline badge-sm border-base-300 px-2 py-0.5 rounded-full text-muted-foreground"
+                                >Format: v2</span
+                            >
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Right Side: Download & Tesla Compatibility Validation Panel -->
-        <div id="download-zone" class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
-          <!-- Download Pack Card -->
-          <div class="glass-panel p-6 rounded-3xl text-center space-y-4">
-            <!-- Steady celebration emoji -->
-            <div class="text-3xl select-none">🎉</div>
-            <h4 class="font-extrabold text-base tracking-tight text-base-content leading-tight">Light Show Sequence Compiled!</h4>
-            <p class="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
-              Your map events are successfully transcoded into ready-to-run Tesla sequence structures.
-            </p>
-            
-            <div class="pt-2 flex flex-col gap-3 max-w-xs mx-auto">
-              <button id="btn-download-bundle" class="btn btn-primary w-full shadow-lg font-semibold h-10 min-h-0 text-xs rounded-full border-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                Download Bundle ZIP
-              </button>
-              
-              <div class="flex flex-col gap-2 w-full">
-                <div class="flex gap-2 w-full">
-                  <button id="btn-download-fseq" class="btn btn-outline flex-grow text-xs font-mono py-2.5 h-auto min-h-0 rounded-full border-0">
-                    lightshow.fseq
-                  </button>
-                  <button id="btn-download-wav" class="btn btn-outline flex-grow text-xs font-mono py-2.5 h-auto min-h-0 rounded-full border-0">
-                    lightshow.wav
-                  </button>
+                <!-- Beatmap Type and Difficulty Selectors -->
+                <div id="config-zone" class="flex flex-col gap-4">
+                    <!-- Dynamic Type Selector (Visible only if multiple map sets/types exist) -->
+                    <div
+                        id="type-tabs-container"
+                        class="hidden flex flex-col gap-2"
+                    >
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center"
+                            >Select Type</span
+                        >
+                        <div
+                            id="type-tabs"
+                            class="flex flex-wrap gap-1.5 justify-center p-1 bg-base-200/40 rounded-full mx-auto w-fit select-none"
+                        >
+                            <!-- Dynamic type buttons populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Difficulty Selector (Tab-bar Style) -->
+                    <div class="flex flex-col gap-2">
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center"
+                            >Select Difficulty</span
+                        >
+                        <div
+                            id="difficulty-tabs"
+                            class="flex flex-wrap gap-1.5 justify-center p-1 bg-base-200/40 rounded-full mx-auto w-fit select-none"
+                        >
+                            <!-- Dynamic difficulty buttons populated by JS -->
+                        </div>
+                    </div>
                 </div>
-                <button id="btn-download-xsq" class="btn btn-link text-muted-foreground/60 hover:text-muted-foreground text-[10px] self-center py-1.5 h-auto min-h-0 font-bold tracking-wide border-0 bg-transparent">
-                  Download xLights .xsq (Advanced)
-                </button>
-              </div>
-            </div>
-            
-            <div class="divider border-base-300/40 my-0"></div>
-            
-            <!-- Quick reset button -->
-            <button id="btn-reset-app" class="btn btn-ghost btn-xs text-[10px] uppercase font-bold tracking-wider text-muted-foreground/75 rounded-full px-4 h-6 min-h-0 border-0 bg-transparent">
-              Convert Another Map
-            </button>
-          </div>
 
-          <!-- Compatibility Validation Report Card -->
-          <div class="glass-panel p-5 rounded-3xl space-y-4">
-            <div class="flex items-center justify-between">
-              <h5 class="font-extrabold text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 select-none">
-                <span id="validator-header-icon-container" class="flex items-center justify-center text-success shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                </span>
-                Tesla Compatibility
-              </h5>
-              <div id="validator-status-badge" class="badge badge-success badge-sm font-bold gap-1 text-[9px] px-2 py-0.5 uppercase rounded-full tracking-wider select-none">Pass</div>
-            </div>
-
-            <!-- Highly Concise Checklist Validator -->
-            <div class="space-y-4 pt-1">
-              
-              <!-- 1. Command Count Limit Check -->
-              <div class="space-y-2 select-none">
-                <div class="flex items-center justify-between text-xs font-bold">
-                  <div class="flex items-center gap-1.5">
-                    <span id="validator-check-memory-icon" class="text-success text-xs font-mono font-black">✓</span>
-                    <span class="text-muted-foreground text-[9px] uppercase tracking-wider">Command Count Limit</span>
-                  </div>
-                  <span id="validator-command-ratio" class="font-mono text-[10px] text-muted-foreground">0 / 3,500</span>
+                <!-- Primary Generate Action -->
+                <div class="flex justify-center pt-2">
+                    <button
+                        id="btn-convert"
+                        class="btn btn-primary btn-wide shadow-md font-semibold tracking-wide h-10 min-h-0 text-xs rounded-full"
+                    >
+                        Generate Light Show
+                    </button>
                 </div>
-                <div class="w-full bg-base-200 h-1.5 rounded-full overflow-hidden p-0.5 shadow-inner">
-                  <div id="validator-command-progress" class="bg-success h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <!-- Step 3: Beautiful Conversion Progress Bar -->
+            <div
+                id="progress-card"
+                class="hidden glass-panel p-8 max-w-md mx-auto w-full text-center space-y-6 transition-all duration-300"
+            >
+                <div
+                    id="progress-status"
+                    class="text-xs font-semibold tracking-wider uppercase text-muted-foreground animate-pulse"
+                >
+                    Processing metadata...
                 </div>
-              </div>
-
-              <!-- 2. Show Duration Check -->
-              <div class="flex items-center justify-between text-xs font-bold select-none">
-                <div class="flex items-center gap-1.5">
-                  <span id="validator-check-duration-icon" class="text-success text-xs font-mono font-black">✓</span>
-                  <span class="text-muted-foreground text-[9px] uppercase tracking-wider">Show Duration</span>
+                <div
+                    class="w-full bg-base-200 h-2 rounded-full overflow-hidden p-0.5 shadow-inner"
+                >
+                    <div
+                        id="progress-bar-sweep"
+                        class="progress-sweep bg-primary h-full rounded-full w-0"
+                    ></div>
                 </div>
-                <span id="validator-metric-duration" class="font-mono text-[10px] text-base-content">0m 00s</span>
-              </div>
-
-              <!-- 3. Audio WAV Track Check -->
-              <div class="flex items-center justify-between text-xs font-bold select-none">
-                <div class="flex items-center gap-1.5">
-                  <span id="validator-check-audio-icon" class="text-success text-xs font-mono font-black">✓</span>
-                  <span class="text-muted-foreground text-[9px] uppercase tracking-wider">Audio Track (.wav)</span>
+                <div
+                    class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/45 select-none"
+                >
+                    Generating locally in browser
                 </div>
-                <span id="validator-metric-audio" class="font-mono text-[10px] text-base-content">WAV</span>
-              </div>
-
             </div>
 
-            <!-- Warnings Container (Hidden unless warnings exist) -->
-            <div id="validator-warnings" class="hidden text-xs space-y-1.5 p-3 rounded-2xl bg-warning/5 border border-warning/15 text-warning-content font-medium">
-              <!-- Dynamically populated warnings -->
+            <!-- Step 4: Ready & Done State (Visualizer, Downloads, and Validation) -->
+            <div
+                id="results-and-visualizer-container"
+                class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start fade-in-up"
+            >
+                <!-- Left Side: 3D Preview Panel -->
+                <div
+                    id="visualizer-zone"
+                    class="lg:col-span-7 xl:col-span-8 space-y-4"
+                >
+                    <div class="flex items-center justify-between px-2">
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                            >3D Light Show Preview</span
+                        >
+                        <div class="flex items-center gap-3 select-none">
+                            <div
+                                id="car-model-tabs"
+                                class="flex p-1 bg-base-200/60 rounded-full select-none gap-1 items-center w-fit"
+                            >
+                                <button
+                                    class="car-tab active"
+                                    data-car="Model_S"
+                                >
+                                    Model S
+                                </button>
+                                <button class="car-tab" data-car="Cybertruck">
+                                    Cybertruck
+                                </button>
+                            </div>
+                            <button
+                                id="btn-reset-camera"
+                                class="btn btn-xs px-3 py-1 font-sans font-bold text-[9px] rounded-full h-6 min-h-0 border-0"
+                            >
+                                Reset View
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas Area -->
+                    <div
+                        class="relative w-full rounded-3xl overflow-hidden shadow-2xl min-h-[340px] sm:min-h-[440px] flex items-center justify-center bg-neutral-900 border-0"
+                    >
+                        <canvas
+                            id="visualizer-canvas"
+                            class="absolute top-0 left-0 w-full h-full block touch-none"
+                        ></canvas>
+                        <div
+                            id="visualizer-overlay"
+                            class="absolute inset-0 bg-base-100/50 backdrop-blur-sm flex flex-col items-center justify-center gap-3 hidden"
+                        >
+                            <div
+                                class="loading loading-spinner loading-md text-primary"
+                            ></div>
+                            <span
+                                class="text-xs text-muted-foreground font-medium"
+                                >Preparing visualizer...</span
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Playback Controls Scrubber -->
+                    <div
+                        class="glass-panel p-4 rounded-3xl flex flex-col gap-3"
+                    >
+                        <!-- Top Controls Row -->
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-4 w-full mt-1"
+                        >
+                            <!-- Play / Pause / Mute & Time Display -->
+                            <div class="flex items-center gap-2 select-none">
+                                <button
+                                    id="btn-play-pause"
+                                    class="btn btn-circle btn-primary btn-sm w-9 h-9 flex items-center justify-center shadow-md border-0"
+                                    aria-label="Play/Pause"
+                                >
+                                    <!-- Play Icon -->
+                                    <svg
+                                        id="icon-play"
+                                        class="w-3.5 h-3.5 fill-current"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    <!-- Pause Icon (hidden by default) -->
+                                    <svg
+                                        id="icon-pause"
+                                        class="w-3.5 h-3.5 fill-current hidden"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                                        />
+                                    </svg>
+                                </button>
+
+                                <div class="volume-container">
+                                    <button
+                                        id="btn-mute"
+                                        class="btn btn-circle btn-ghost btn-sm w-8 h-8 flex items-center justify-center border-0 animate-none!"
+                                        aria-label="Mute/Unmute"
+                                    >
+                                        <!-- Speaker High Icon -->
+                                        <svg
+                                            id="icon-volume-on"
+                                            class="w-3.5 h-3.5 fill-current"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+                                            />
+                                        </svg>
+                                        <!-- Mute Icon (hidden by default) -->
+                                        <svg
+                                            id="icon-volume-off"
+                                            class="w-3.5 h-3.5 fill-current hidden"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"
+                                            />
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider-wrapper">
+                                        <input
+                                            type="range"
+                                            id="slider-volume"
+                                            min="0"
+                                            max="100"
+                                            value="50"
+                                            class="w-full"
+                                            aria-label="Volume"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground border-l border-base-300 pl-3"
+                                >
+                                    <span
+                                        id="time-current"
+                                        class="font-mono text-base-content select-none"
+                                        >0:00</span
+                                    >
+                                    <span class="opacity-30">/</span>
+                                    <span
+                                        id="time-duration"
+                                        class="font-mono select-none"
+                                        >0:00</span
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Trim details and reset button -->
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <span
+                                        class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0"
+                                        >Trimmed:</span
+                                    >
+                                    <span
+                                        id="trim-range-label"
+                                        class="text-[10px] font-mono text-base-content font-semibold truncate"
+                                        >0:00 - 0:00</span
+                                    >
+                                </div>
+                                <button
+                                    id="btn-reset-trim"
+                                    class="btn btn-ghost btn-xs text-[9px] h-6 min-h-0 px-3 rounded-full uppercase font-bold text-muted-foreground border border-base-300 hover:bg-base-200"
+                                >
+                                    Reset Trim
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Integrated Timeline Container -->
+                        <div
+                            id="integrated-timeline-container"
+                            class="relative w-full h-16 rounded-xl bg-base-200/50 border border-base-300 overflow-hidden cursor-crosshair select-none"
+                        >
+                            <!-- Command Density Canvas -->
+                            <canvas
+                                id="timeline-density-canvas"
+                                class="absolute inset-0 w-full h-full block pointer-events-none"
+                            ></canvas>
+
+                            <!-- Left and Right Greyed-out flat overlays -->
+                            <div
+                                id="timeline-left-overlay"
+                                class="absolute top-0 left-0 h-full bg-base-100/50 pointer-events-none"
+                            ></div>
+                            <div
+                                id="timeline-right-overlay"
+                                class="absolute top-0 right-0 h-full bg-base-100/50 pointer-events-none"
+                            ></div>
+
+                            <!-- Active Highlight Range -->
+                            <div
+                                id="timeline-active-region"
+                                class="absolute top-0 h-full border-l border-r border-primary/20 pointer-events-none"
+                            ></div>
+
+                            <!-- Seeker Line (Playhead) - simple solid 2px blue line, absolutely flat, no knobs, glows, or shadows -->
+                            <div
+                                id="timeline-playhead"
+                                class="absolute top-0 w-0.5 h-full pointer-events-none z-10"
+                                style="background-color: #3b82f6 !important"
+                            ></div>
+
+                            <!-- Trim Bracket Handles - clean and flat, no shadows -->
+                            <div
+                                id="trim-handle-start"
+                                class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20"
+                            >
+                                <div
+                                    class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100"
+                                >
+                                    <div
+                                        class="w-full h-0.5 bg-primary-content opacity-40"
+                                    ></div>
+                                    <div
+                                        class="w-full h-0.5 bg-primary-content opacity-40"
+                                    ></div>
+                                </div>
+                            </div>
+                            <div
+                                id="trim-handle-end"
+                                class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20"
+                            >
+                                <div
+                                    class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100"
+                                >
+                                    <div
+                                        class="w-full h-0.5 bg-primary-content opacity-40"
+                                    ></div>
+                                    <div
+                                        class="w-full h-0.5 bg-primary-content opacity-40"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Download & Tesla Compatibility Validation Panel -->
+                <div
+                    id="download-zone"
+                    class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6"
+                >
+                    <!-- Download Pack Card -->
+                    <div
+                        class="glass-panel p-6 rounded-3xl text-center space-y-4"
+                    >
+                        <div class="text-3xl select-none">🎉</div>
+                        <h4
+                            class="font-extrabold text-base tracking-tight text-base-content leading-tight"
+                        >
+                            Light show sequence successfully compiled!
+                        </h4>
+
+                        <div class="pt-2 flex flex-col gap-3 max-w-xs mx-auto">
+                            <button
+                                id="btn-download-bundle"
+                                class="btn btn-primary w-full shadow-lg font-semibold h-10 min-h-0 text-xs rounded-full border-0"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="mr-2"
+                                >
+                                    <path
+                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                    />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" x2="12" y1="15" y2="3" />
+                                </svg>
+                                Download Bundle ZIP
+                            </button>
+
+                            <div class="flex flex-col gap-2 w-full">
+                                <div class="flex gap-2 w-full">
+                                    <button
+                                        id="btn-download-fseq"
+                                        class="btn btn-outline flex-grow text-xs font-mono py-2.5 h-auto min-h-0 rounded-full border-0"
+                                    >
+                                        lightshow.fseq
+                                    </button>
+                                    <button
+                                        id="btn-download-wav"
+                                        class="btn btn-outline flex-grow text-xs font-mono py-2.5 h-auto min-h-0 rounded-full border-0"
+                                    >
+                                        lightshow.wav
+                                    </button>
+                                </div>
+                                <button
+                                    id="btn-download-xsq"
+                                    class="btn btn-link text-muted-foreground/60 hover:text-muted-foreground text-[10px] self-center py-1.5 h-auto min-h-0 font-bold tracking-wide border-0 bg-transparent"
+                                >
+                                    Download xLights .xsq (Advanced)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="divider border-base-300/40 my-0"></div>
+
+                        <!-- Quick reset button -->
+                        <button
+                            id="btn-reset-app"
+                            class="btn btn-ghost btn-xs text-[10px] uppercase font-bold tracking-wider text-muted-foreground/75 rounded-full px-4 h-6 min-h-0 border-0 bg-transparent"
+                        >
+                            Convert Another Map
+                        </button>
+                    </div>
+
+                    <!-- Compatibility Validation Report Card -->
+                    <div class="glass-panel p-5 rounded-3xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h5
+                                class="font-extrabold text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 select-none"
+                            >
+                                <span
+                                    id="validator-header-icon-container"
+                                    class="flex items-center justify-center text-success shrink-0"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="13"
+                                        height="13"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <path
+                                            d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                                        />
+                                        <path d="m9 12 2 2 4-4" />
+                                    </svg>
+                                </span>
+                                Tesla Compatibility
+                            </h5>
+                            <div
+                                id="validator-status-badge"
+                                class="badge badge-success badge-sm font-bold gap-1 text-[9px] px-2 py-0.5 uppercase rounded-full tracking-wider select-none"
+                            >
+                                Pass
+                            </div>
+                        </div>
+
+                        <!-- Highly Concise Checklist Validator -->
+                        <div class="space-y-4 pt-1">
+                            <!-- 1. Command Count Limit Check -->
+                            <div class="space-y-2 select-none">
+                                <div
+                                    class="flex items-center justify-between text-xs font-bold"
+                                >
+                                    <div class="flex items-center gap-1.5">
+                                        <span
+                                            id="validator-check-memory-icon"
+                                            class="text-success text-xs font-mono font-black"
+                                            >✓</span
+                                        >
+                                        <span
+                                            class="text-muted-foreground text-[9px] uppercase tracking-wider"
+                                            >Command Count Limit</span
+                                        >
+                                    </div>
+                                    <span
+                                        id="validator-command-ratio"
+                                        class="font-mono text-[10px] text-muted-foreground"
+                                        >0 / 3,500</span
+                                    >
+                                </div>
+                                <div
+                                    class="w-full bg-base-200 h-1.5 rounded-full overflow-hidden p-0.5 shadow-inner"
+                                >
+                                    <div
+                                        id="validator-command-progress"
+                                        class="bg-success h-full rounded-full transition-all duration-500"
+                                        style="width: 0%"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Show Duration Check -->
+                            <div
+                                class="flex items-center justify-between text-xs font-bold select-none"
+                            >
+                                <div class="flex items-center gap-1.5">
+                                    <span
+                                        id="validator-check-duration-icon"
+                                        class="text-success text-xs font-mono font-black"
+                                        >✓</span
+                                    >
+                                    <span
+                                        class="text-muted-foreground text-[9px] uppercase tracking-wider"
+                                        >Show Duration</span
+                                    >
+                                </div>
+                                <span
+                                    id="validator-metric-duration"
+                                    class="font-mono text-[10px] text-base-content"
+                                    >0m 00s</span
+                                >
+                            </div>
+
+                            <!-- 3. Audio WAV Track Check -->
+                            <div
+                                class="flex items-center justify-between text-xs font-bold select-none"
+                            >
+                                <div class="flex items-center gap-1.5">
+                                    <span
+                                        id="validator-check-audio-icon"
+                                        class="text-success text-xs font-mono font-black"
+                                        >✓</span
+                                    >
+                                    <span
+                                        class="text-muted-foreground text-[9px] uppercase tracking-wider"
+                                        >Audio Track (.wav)</span
+                                    >
+                                </div>
+                                <span
+                                    id="validator-metric-audio"
+                                    class="font-mono text-[10px] text-base-content"
+                                    >WAV</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Warnings Container (Hidden unless warnings exist) -->
+                        <div
+                            id="validator-warnings"
+                            class="hidden text-xs space-y-1.5 p-3 rounded-2xl bg-warning/5 border border-warning/15 text-warning-content font-medium"
+                        >
+                            <!-- Dynamically populated warnings -->
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
 
-      </div>
-
-      <!-- Hidden Developer / Background elements to satisfy old main.ts logs queries and prevent DOM errors -->
-      <div id="log-zone" class="hidden">
-        <div id="process-loader" class="hidden"></div>
-        <div id="console-output" class="hidden"></div>
-      </div>
-
-      <!-- FAQ Accordion section -->
-      <section class="space-y-4 max-w-3xl mx-auto w-full pt-4 select-none">
-        <h2 class="text-lg font-black tracking-tight text-center">How to Run it in Your Tesla</h2>
-        
-        <div class="grid md:grid-cols-3 gap-6">
-          <div class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left">
-            <div class="flex flex-col md:flex-row items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold">1</span>
-              <span class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0">Download Pack</span>
+            <!-- Hidden Developer / Background elements to satisfy old main.ts logs queries and prevent DOM errors -->
+            <div id="log-zone" class="hidden">
+                <div id="process-loader" class="hidden"></div>
+                <div id="console-output" class="hidden"></div>
             </div>
-            <p class="text-[11px] text-muted-foreground leading-relaxed">
-              Generate and download the **Bundle ZIP** containing **`lightshow.fseq`** and **`lightshow.wav`** directly.
-            </p>
-          </div>
-          
-          <div class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left">
-            <div class="flex flex-col md:flex-row items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold">2</span>
-              <span class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0">Copy to USB</span>
+
+            <!-- FAQ Accordion section -->
+            <section
+                class="space-y-4 max-w-3xl mx-auto w-full pt-4 select-none"
+            >
+                <h2 class="text-lg font-black tracking-tight text-center">
+                    How to Run it in Your Tesla
+                </h2>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div
+                        class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left"
+                    >
+                        <div
+                            class="flex flex-col md:flex-row items-center gap-2"
+                        >
+                            <span
+                                class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold"
+                                >1</span
+                            >
+                            <span
+                                class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0"
+                                >Download Pack</span
+                            >
+                        </div>
+                        <p
+                            class="text-[11px] text-muted-foreground leading-relaxed"
+                        >
+                            Generate and download the
+                            <b>Bundle ZIP</b> containing
+                            <b>lightshow.fseq</b> and
+                            <b>lightshow.wav</b> directly.
+                        </p>
+                    </div>
+
+                    <div
+                        class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left"
+                    >
+                        <div
+                            class="flex flex-col md:flex-row items-center gap-2"
+                        >
+                            <span
+                                class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold"
+                                >2</span
+                            >
+                            <span
+                                class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0"
+                                >Copy to USB</span
+                            >
+                        </div>
+                        <p
+                            class="text-[11px] text-muted-foreground leading-relaxed"
+                        >
+                            Extract the files and copy them into a folder named
+                            <b>LightShow</b> at the root of a FAT32/exFAT USB
+                            flash drive.
+                        </p>
+                    </div>
+
+                    <div
+                        class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left"
+                    >
+                        <div
+                            class="flex flex-col md:flex-row items-center gap-2"
+                        >
+                            <span
+                                class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold"
+                                >3</span
+                            >
+                            <span
+                                class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0"
+                                >Plug & Play</span
+                            >
+                        </div>
+                        <p
+                            class="text-[11px] text-muted-foreground leading-relaxed"
+                        >
+                            Plug the USB into your Tesla Toybox, select Light
+                            Show, step out, close the doors, and watch the show!
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-6 mt-12 bg-base-200/10 text-center select-none">
+            <div class="container mx-auto px-4 flex flex-col gap-2">
+                <p
+                    class="text-[10px] text-muted-foreground font-mono font-medium"
+                >
+                    Handcrafted in TypeScript & Bun. Made by HLVM.
+                </p>
             </div>
-            <p class="text-[11px] text-muted-foreground leading-relaxed">
-              Extract the files and copy them into a folder named **`LightShow`** at the root of a FAT32/exFAT USB flash drive.
-            </p>
-          </div>
-          
-          <div class="glass-panel p-5 rounded-3xl space-y-2.5 shadow-sm text-center md:text-left">
-            <div class="flex flex-col md:flex-row items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-primary text-primary-content flex items-center justify-center text-[10px] font-mono font-bold">3</span>
-              <span class="font-extrabold text-xs uppercase tracking-wider text-base-content mt-1 md:mt-0">Plug & Play</span>
-            </div>
-            <p class="text-[11px] text-muted-foreground leading-relaxed">
-              Plug the USB into your Tesla Toybox, select Light Show, step out, close the doors, and watch the show!
-            </p>
-          </div>
-        </div>
-      </section>
+        </footer>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="py-6 mt-12 bg-base-200/10 text-center select-none">
-      <div class="container mx-auto px-4 flex flex-col gap-2">
-        <p class="text-[10px] text-muted-foreground font-mono font-medium">
-          Handcrafted in TypeScript & Bun. Preserving 100% user data privacy.
-        </p>
-      </div>
-    </footer>
-
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
 </html>
