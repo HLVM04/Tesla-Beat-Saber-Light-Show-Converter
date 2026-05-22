@@ -37,15 +37,23 @@ let playbackDurationMs = 0;
 let currentTimeMs = 0;
 let isPlaying = false;
 let lastTickTime = 0;
+let isDraggingStart = false;
+let isDraggingEnd = false;
+let isSeekingTimeline = false;
+let wasPlayingBeforeDrag = false;
 
 // --- DOM Elements ---
 const dropZone = document.getElementById("drop-zone")!;
 const zipInput = document.getElementById("zip-input")! as HTMLInputElement;
-const folderInput = document.getElementById("folder-input")! as HTMLInputElement;
+const folderInput = document.getElementById(
+  "folder-input",
+)! as HTMLInputElement;
 const btnBrowseZip = document.getElementById("btn-browse-zip")!;
 const btnBrowseFolder = document.getElementById("btn-browse-folder")!;
 
-const coverPreview = document.getElementById("cover-preview")! as HTMLImageElement;
+const coverPreview = document.getElementById(
+  "cover-preview",
+)! as HTMLImageElement;
 const coverPlaceholder = document.getElementById("cover-placeholder")!;
 const songTitle = document.getElementById("song-title")!;
 const songSub = document.getElementById("song-sub")!;
@@ -56,37 +64,77 @@ const mapVersionBadge = document.getElementById("map-version-badge")!;
 const difficultyTabs = document.getElementById("difficulty-tabs")!;
 const btnConvert = document.getElementById("btn-convert")! as HTMLButtonElement;
 
-const btnDownloadBundle = document.getElementById("btn-download-bundle")! as HTMLButtonElement;
-const btnDownloadFseq = document.getElementById("btn-download-fseq")! as HTMLButtonElement;
-const btnDownloadXsq = document.getElementById("btn-download-xsq")! as HTMLButtonElement;
-const btnDownloadWav = document.getElementById("btn-download-wav")! as HTMLButtonElement;
-const themeToggle = document.getElementById("theme-toggle")! as HTMLInputElement;
+const btnDownloadBundle = document.getElementById(
+  "btn-download-bundle",
+)! as HTMLButtonElement;
+const btnDownloadFseq = document.getElementById(
+  "btn-download-fseq",
+)! as HTMLButtonElement;
+const btnDownloadXsq = document.getElementById(
+  "btn-download-xsq",
+)! as HTMLButtonElement;
+const btnDownloadWav = document.getElementById(
+  "btn-download-wav",
+)! as HTMLButtonElement;
+const themeToggle = document.getElementById(
+  "theme-toggle",
+)! as HTMLInputElement;
 
 // --- State Machine Containers ---
 const uploadCard = document.getElementById("upload-card")!;
 const configCard = document.getElementById("config-card")!;
 const progressCard = document.getElementById("progress-card")!;
-const resultsContainer = document.getElementById("results-and-visualizer-container")!;
+const resultsContainer = document.getElementById(
+  "results-and-visualizer-container",
+)!;
 const btnUploadDifferent = document.getElementById("btn-upload-different")!;
 const btnResetApp = document.getElementById("btn-reset-app")!;
 
 // --- Visualizer DOM Elements ---
-const visualizerCanvas = document.getElementById("visualizer-canvas")! as HTMLCanvasElement;
-const btnPlayPause = document.getElementById("btn-play-pause")! as HTMLButtonElement;
+const visualizerCanvas = document.getElementById(
+  "visualizer-canvas",
+)! as HTMLCanvasElement;
+const btnPlayPause = document.getElementById(
+  "btn-play-pause",
+)! as HTMLButtonElement;
 const iconPlay = document.getElementById("icon-play")!;
 const iconPause = document.getElementById("icon-pause")!;
 const btnMute = document.getElementById("btn-mute")! as HTMLButtonElement;
 const iconVolumeOn = document.getElementById("icon-volume-on")!;
 const iconVolumeOff = document.getElementById("icon-volume-off")!;
-const timelineSlider = document.getElementById("timeline-slider")! as HTMLInputElement;
+const integratedTimelineContainer = document.getElementById(
+  "integrated-timeline-container",
+)! as HTMLDivElement;
+const timelineDensityCanvas = document.getElementById(
+  "timeline-density-canvas",
+)! as HTMLCanvasElement;
+const timelineLeftOverlay = document.getElementById(
+  "timeline-left-overlay",
+)! as HTMLDivElement;
+const timelineRightOverlay = document.getElementById(
+  "timeline-right-overlay",
+)! as HTMLDivElement;
+const timelineActiveRegion = document.getElementById(
+  "timeline-active-region",
+)! as HTMLDivElement;
+const timelinePlayhead = document.getElementById(
+  "timeline-playhead",
+)! as HTMLDivElement;
+const trimHandleStart = document.getElementById(
+  "trim-handle-start",
+)! as HTMLDivElement;
+const trimHandleEnd = document.getElementById(
+  "trim-handle-end",
+)! as HTMLDivElement;
 const timeCurrent = document.getElementById("time-current")!;
 const timeDuration = document.getElementById("time-duration")!;
-const trimStartSlider = document.getElementById("trim-start-slider")! as HTMLInputElement;
-const trimEndSlider = document.getElementById("trim-end-slider")! as HTMLInputElement;
-const trimTrackFill = document.getElementById("trim-track-fill")!;
 const trimRangeLabel = document.getElementById("trim-range-label")!;
-const btnResetTrim = document.getElementById("btn-reset-trim")! as HTMLButtonElement;
-const btnResetCamera = document.getElementById("btn-reset-camera")! as HTMLButtonElement;
+const btnResetTrim = document.getElementById(
+  "btn-reset-trim",
+)! as HTMLButtonElement;
+const btnResetCamera = document.getElementById(
+  "btn-reset-camera",
+)! as HTMLButtonElement;
 const typeTabsContainer = document.getElementById("type-tabs-container")!;
 const typeTabs = document.getElementById("type-tabs")!;
 const carModelTabs = document.getElementById("car-model-tabs")!;
@@ -99,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupConversion();
   setupDownloads();
   setupVisualizerControls();
-  
+
   // Navigation reset buttons
   if (btnUploadDifferent) {
     btnUploadDifferent.addEventListener("click", () => resetUI());
@@ -107,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnResetApp) {
     btnResetApp.addEventListener("click", () => resetUI());
   }
-  
+
   // Set starting state
   setUIState("upload");
 });
@@ -126,7 +174,7 @@ function setUIState(state: UIState) {
 function setupTheme() {
   const savedTheme = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  
+
   if (savedTheme === "shadcn-dark" || (!savedTheme && prefersDark)) {
     document.documentElement.setAttribute("data-theme", "shadcn-dark");
     themeToggle.checked = true;
@@ -140,6 +188,12 @@ function setupTheme() {
     const theme = isDark ? "shadcn-dark" : "shadcn";
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
+    if (activeConverter) {
+      drawCommandDensity(
+        activeConverter.getLightEffects(),
+        activeConverter.getDurationSeconds() * 1000,
+      );
+    }
   });
 }
 
@@ -161,7 +215,7 @@ function setupDragAndDrop() {
   dropZone.addEventListener("drop", async (e) => {
     e.preventDefault();
     dropZone.classList.remove("border-base-content", "bg-base-200/80");
-    
+
     const files = e.dataTransfer?.files;
     if (!files || files.length === 0) return;
 
@@ -199,7 +253,10 @@ function setupFileSelects() {
 }
 
 // --- Console Logger (Redirected to Developer Console) ---
-function logConsole(msg: string, type: "info" | "success" | "warning" | "error" = "info") {
+function logConsole(
+  msg: string,
+  type: "info" | "success" | "warning" | "error" = "info",
+) {
   const prefix = `[TeslaConverter] [${type.toUpperCase()}]`;
   if (type === "error") {
     console.error(`${prefix} ${msg}`);
@@ -216,14 +273,14 @@ async function processZipFile(file: File) {
   logConsole(`Extracting ZIP archive: ${file.name}...`);
 
   loadedFiles = {};
-  
+
   try {
     const zip = await JSZip.loadAsync(file);
     const promises: Promise<void>[] = [];
-    
+
     zip.forEach((relativePath, entry) => {
       if (entry.dir) return;
-      
+
       const p = entry.async("arraybuffer").then((buffer) => {
         const name = relativePath.split("/").pop() || relativePath;
         loadedFiles[name.toLowerCase()] = {
@@ -235,10 +292,15 @@ async function processZipFile(file: File) {
     });
 
     await Promise.all(promises);
-    logConsole(`Successfully extracted ${Object.keys(loadedFiles).length} files from archive.`);
+    logConsole(
+      `Successfully extracted ${Object.keys(loadedFiles).length} files from archive.`,
+    );
     processLoadedFiles();
   } catch (err) {
-    logConsole(`ZIP extraction failed: ${err instanceof Error ? err.message : String(err)}`, "error");
+    logConsole(
+      `ZIP extraction failed: ${err instanceof Error ? err.message : String(err)}`,
+      "error",
+    );
     alert("ZIP extraction failed. Please make sure this is a valid archive.");
   }
 }
@@ -270,7 +332,10 @@ async function processFileList(files: FileList) {
     logConsole(`Successfully loaded ${Object.keys(loadedFiles).length} files.`);
     processLoadedFiles();
   } catch (err) {
-    logConsole(`File load failed: ${err instanceof Error ? err.message : String(err)}`, "error");
+    logConsole(
+      `File load failed: ${err instanceof Error ? err.message : String(err)}`,
+      "error",
+    );
     alert("Loading directory files failed. Please try again.");
   }
 }
@@ -279,8 +344,13 @@ async function processFileList(files: FileList) {
 function processLoadedFiles() {
   const infoKey = "info.dat";
   if (!loadedFiles[infoKey]) {
-    logConsole("Error: Could not find Info.dat in the uploaded files. Is this a valid Beat Saber map folder?", "error");
-    alert("Error: Could not find Info.dat. Make sure you dropped a valid Beat Saber song directory or archive!");
+    logConsole(
+      "Error: Could not find Info.dat in the uploaded files. Is this a valid Beat Saber map folder?",
+      "error",
+    );
+    alert(
+      "Error: Could not find Info.dat. Make sure you dropped a valid Beat Saber song directory or archive!",
+    );
     return;
   }
 
@@ -289,14 +359,17 @@ function processLoadedFiles() {
     const infoJson = decoder.decode(loadedFiles[infoKey].data);
     parsedInfo = JSON.parse(infoJson) as InfoData;
 
-    logConsole(`Parsed Info.dat. Song Title: "${parsedInfo._songFilename}" (BPM: ${parsedInfo._beatsPerMinute})`);
+    logConsole(
+      `Parsed Info.dat. Song Title: "${parsedInfo._songFilename}" (BPM: ${parsedInfo._beatsPerMinute})`,
+    );
 
     // Render Cover Preview
     renderCoverPreview();
 
     // Fill metadata text
     const raw: any = parsedInfo;
-    const realTitle = raw._songName || parsedInfo._songFilename || "Unknown Title";
+    const realTitle =
+      raw._songName || parsedInfo._songFilename || "Unknown Title";
     const realSub = raw._songSubName || "";
     const realArtist = raw._songAuthorName || "Unknown Artist";
 
@@ -314,8 +387,13 @@ function processLoadedFiles() {
     setUIState("config");
     logConsole("Beatmap successfully loaded and parsed.", "success");
   } catch (err) {
-    logConsole(`Failed to parse map metadata: ${err instanceof Error ? err.message : String(err)}`, "error");
-    alert("Parsing beatmap details failed. Please ensure the files are structured correctly.");
+    logConsole(
+      `Failed to parse map metadata: ${err instanceof Error ? err.message : String(err)}`,
+      "error",
+    );
+    alert(
+      "Parsing beatmap details failed. Please ensure the files are structured correctly.",
+    );
   }
 }
 
@@ -326,9 +404,15 @@ function renderCoverPreview() {
   const coverKey = coverFilename.toLowerCase();
 
   let fileEntry = loadedFiles[coverKey];
-  
+
   if (!fileEntry) {
-    const fallbacks = ["cover.jpg", "cover.png", "cover.jpeg", "info.jpg", "info.png"];
+    const fallbacks = [
+      "cover.jpg",
+      "cover.png",
+      "cover.jpeg",
+      "info.jpg",
+      "info.png",
+    ];
     for (const f of fallbacks) {
       if (loadedFiles[f]) {
         fileEntry = loadedFiles[f];
@@ -354,7 +438,11 @@ let selectedType: string = "Standard";
 
 // --- Helper to extract normalized difficulty set characteristic ---
 function getCharacteristicName(set: any): string {
-  const name = set._beatmapCharacteristicName || set.beatmapCharacteristicName || set._difficultyBeatmapSet || "Standard";
+  const name =
+    set._beatmapCharacteristicName ||
+    set.beatmapCharacteristicName ||
+    set._difficultyBeatmapSet ||
+    "Standard";
   return typeof name === "string" ? name.trim() : "Standard";
 }
 
@@ -362,17 +450,21 @@ function getCharacteristicName(set: any): string {
 function populateDifficulties() {
   difficultyTabs.innerHTML = "";
   selectedDifficultyFile = null;
-  
-  if (!parsedInfo || !parsedInfo._difficultyBeatmapSets || parsedInfo._difficultyBeatmapSets.length === 0) {
+
+  if (
+    !parsedInfo ||
+    !parsedInfo._difficultyBeatmapSets ||
+    parsedInfo._difficultyBeatmapSets.length === 0
+  ) {
     typeTabsContainer.classList.add("hidden");
     return;
   }
 
   const sets = parsedInfo._difficultyBeatmapSets;
-  
+
   // 1. Determine all unique types/sets using the robust characteristic name getter
-  const types = Array.from(new Set(sets.map(s => getCharacteristicName(s))));
-  
+  const types = Array.from(new Set(sets.map((s) => getCharacteristicName(s))));
+
   // 2. Set default active type if not already valid or set
   if (!types.includes(selectedType)) {
     // Try to default to "Standard", otherwise use the first available type
@@ -383,24 +475,25 @@ function populateDifficulties() {
   if (types.length > 1) {
     typeTabsContainer.classList.remove("hidden");
     typeTabs.innerHTML = "";
-    
+
     types.forEach((type) => {
       const typeBtn = document.createElement("button");
-      typeBtn.className = "type-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
+      typeBtn.className =
+        "type-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
       typeBtn.innerText = type;
-      
+
       if (type === selectedType) {
         typeBtn.classList.remove("bg-base-200/70", "text-base-content");
         typeBtn.classList.add("bg-primary", "text-primary-content", "active");
       }
-      
+
       typeBtn.addEventListener("click", () => {
         if (typeBtn.classList.contains("active")) return;
         selectedType = type;
         logConsole(`Selected map type: ${type}`);
         populateDifficulties(); // Re-render difficulties for the newly selected type
       });
-      
+
       typeTabs.appendChild(typeBtn);
     });
   } else {
@@ -408,16 +501,23 @@ function populateDifficulties() {
   }
 
   // 4. Find the active set based on selectedType using the robust characteristic getter
-  const activeSet = sets.find(s => getCharacteristicName(s) === selectedType) || sets[0];
-  if (!activeSet || !activeSet._difficultyBeatmaps || activeSet._difficultyBeatmaps.length === 0) return;
+  const activeSet =
+    sets.find((s) => getCharacteristicName(s) === selectedType) || sets[0];
+  if (
+    !activeSet ||
+    !activeSet._difficultyBeatmaps ||
+    activeSet._difficultyBeatmaps.length === 0
+  )
+    return;
 
   // 5. Render Difficulties for the active set
   // Find highest rank difficulty in the active set to auto-select
   let highestRank = -1;
   let highestFilename = "";
-  
+
   activeSet._difficultyBeatmaps.forEach((diffMap) => {
-    const rank = typeof diffMap._difficultyRank === "number" ? diffMap._difficultyRank : 0;
+    const rank =
+      typeof diffMap._difficultyRank === "number" ? diffMap._difficultyRank : 0;
     if (rank > highestRank) {
       highestRank = rank;
       highestFilename = diffMap._beatmapFilename;
@@ -427,25 +527,26 @@ function populateDifficulties() {
   activeSet._difficultyBeatmaps.forEach((diffMap) => {
     const filename = diffMap._beatmapFilename;
     const difficultyName = diffMap._difficulty; // e.g. "Easy", "ExpertPlus"
-    
+
     const tabButton = document.createElement("button");
-    tabButton.className = "diff-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
+    tabButton.className =
+      "diff-tab transition-all-300 btn btn-sm h-8 min-h-0 bg-base-200/70 hover:bg-base-300 text-base-content border-0 text-[11px] font-bold px-4 py-1.5 rounded-full select-none";
     tabButton.innerText = difficultyName; // Only show difficulty level, type is selected separately!
-    
+
     // Auto-select highest difficulty
     if (filename === highestFilename) {
       tabButton.classList.remove("bg-base-200/70", "text-base-content");
       tabButton.classList.add("bg-primary", "text-primary-content", "active");
       selectedDifficultyFile = filename;
     }
-    
+
     tabButton.addEventListener("click", () => {
       if (tabButton.classList.contains("active")) return;
       difficultyTabs.querySelectorAll(".diff-tab").forEach((btn) => {
         btn.classList.remove("bg-primary", "text-primary-content", "active");
         btn.classList.add("bg-base-200/70", "text-base-content");
       });
-      
+
       tabButton.classList.remove("bg-base-200/70", "text-base-content");
       tabButton.classList.add("bg-primary", "text-primary-content", "active");
       selectedDifficultyFile = filename;
@@ -466,12 +567,12 @@ function populateDifficulties() {
 function updateProgress(percent: number, status: string): Promise<void> {
   const progressBarSweep = document.getElementById("progress-bar-sweep")!;
   const progressStatus = document.getElementById("progress-status")!;
-  
+
   if (progressStatus) progressStatus.innerText = status;
   if (progressBarSweep) {
     progressBarSweep.style.width = `${percent}%`;
   }
-  
+
   // Yield execution thread slightly to trigger smooth CSS animations
   return new Promise((resolve) => setTimeout(resolve, 350));
 }
@@ -480,21 +581,26 @@ function updateProgress(percent: number, status: string): Promise<void> {
 function setupConversion() {
   btnConvert.addEventListener("click", async () => {
     if (!parsedInfo || !selectedDifficultyFile) return;
-    
+
     const selectedFilename = selectedDifficultyFile;
     const fileKey = selectedFilename.toLowerCase();
-    
+
     resetOutputs();
     setUIState("progress");
-    
+
     await updateProgress(15, "Parsing beatmap file...");
     logConsole(`Starting Tesla Light Show conversion...`);
     logConsole(`Target difficulty map: ${selectedFilename}`);
 
     const mapFile = loadedFiles[fileKey];
     if (!mapFile) {
-      logConsole(`Error: Beatmap file "${selectedFilename}" not found in loaded files.`, "error");
-      alert(`Could not find the beatmap file named: "${selectedFilename}". Resetting.`);
+      logConsole(
+        `Error: Beatmap file "${selectedFilename}" not found in loaded files.`,
+        "error",
+      );
+      alert(
+        `Could not find the beatmap file named: "${selectedFilename}". Resetting.`,
+      );
       resetUI();
       return;
     }
@@ -504,12 +610,18 @@ function setupConversion() {
       const decoder = new TextDecoder("utf-8");
       const mapJson = decoder.decode(mapFile.data);
       const normalizedMap = parseMapData(mapJson);
-      
-      logConsole(`Loaded ${normalizedMap._notes?.length || 0} notes and ${normalizedMap._events?.length || 0} events.`);
+
+      logConsole(
+        `Loaded ${normalizedMap._notes?.length || 0} notes and ${normalizedMap._events?.length || 0} events.`,
+      );
 
       // 2. Generate Lightshow XML
       await updateProgress(40, "Translating light events...");
-      const converter = new LightshowConverter(parsedInfo._beatsPerMinute, normalizedMap, 100);
+      const converter = new LightshowConverter(
+        parsedInfo._beatsPerMinute,
+        normalizedMap,
+        100,
+      );
       generatedXsq = converter.generateLightshow();
       activeConverter = converter;
       logConsole(`Successfully compiled lightshow layout XML.`, "success");
@@ -517,7 +629,10 @@ function setupConversion() {
       // 2b. Generate FSEQ Binary
       await updateProgress(60, "Generating ready FSEQ commands...");
       generatedFseq = converter.generateFseq();
-      logConsole(`Successfully generated FSEQ binary sequence (${generatedFseq.length} bytes).`, "success");
+      logConsole(
+        `Successfully generated FSEQ binary sequence (${generatedFseq.length} bytes).`,
+        "success",
+      );
 
       // 3. Audio Transcoding
       const songFilename = parsedInfo._songFilename || "song.egg";
@@ -537,16 +652,25 @@ function setupConversion() {
       if (audioFile) {
         await updateProgress(75, "Transcoding OGG audio to WAV...");
         try {
-          generatedWav = await convertOggToWav(audioFile.data, (progressMsg) => {
-            logConsole(`Transcoder: ${progressMsg}`);
-          });
+          generatedWav = await convertOggToWav(
+            audioFile.data,
+            (progressMsg) => {
+              logConsole(`Transcoder: ${progressMsg}`);
+            },
+          );
           originalWav = generatedWav;
           logConsole(`Audio transcoding completed successfully!`, "success");
         } catch (audioErr) {
-          logConsole(`Warning: Audio transcoding failed: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`, "warning");
+          logConsole(
+            `Warning: Audio transcoding failed: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`,
+            "warning",
+          );
         }
       } else {
-        logConsole(`Warning: Audio file "${songFilename}" not found in the upload. Skipping transcoding.`, "warning");
+        logConsole(
+          `Warning: Audio file "${songFilename}" not found in the upload. Skipping transcoding.`,
+          "warning",
+        );
       }
 
       // 4. Create output ZIP bundle
@@ -559,13 +683,20 @@ function setupConversion() {
 
       // Run Tesla Compatibility Validation
       logConsole("Running Tesla compatibility checks...");
-      runSimplifiedValidation(converter.getDurationSeconds(), converter.getTotalEffectsCount(), !!generatedWav);
+      runSimplifiedValidation(
+        converter.getDurationSeconds(),
+        converter.getTotalEffectsCount(),
+        !!generatedWav,
+      );
 
       await updateProgress(100, "Done! Initializing visualizer...");
-      
+
       // Reveal the beautiful preview visualizer and download cards
       setUIState("done");
-      logConsole("SUCCESS: Tesla light show files are ready for download!", "success");
+      logConsole(
+        "SUCCESS: Tesla light show files are ready for download!",
+        "success",
+      );
 
       // Initialize the visualizer preview
       if (generatedXsq) {
@@ -577,10 +708,14 @@ function setupConversion() {
         generatedWavTrimKey = generatedWav ? getCurrentTrimKey() : "";
         initVisualizer(effects, durationSec, generatedWav);
       }
-
     } catch (err) {
-      logConsole(`Conversion failed: ${err instanceof Error ? err.message : String(err)}`, "error");
-      alert(`An error occurred during light show compilation: ${err instanceof Error ? err.message : String(err)}`);
+      logConsole(
+        `Conversion failed: ${err instanceof Error ? err.message : String(err)}`,
+        "error",
+      );
+      alert(
+        `An error occurred during light show compilation: ${err instanceof Error ? err.message : String(err)}`,
+      );
       resetUI();
     }
   });
@@ -620,7 +755,9 @@ function setupDownloadUrls() {
 
   btnDownloadFseq.onclick = () => {
     if (generatedFseq) {
-      const fseqBlob = new Blob([generatedFseq as any], { type: "application/octet-stream" });
+      const fseqBlob = new Blob([generatedFseq as any], {
+        type: "application/octet-stream",
+      });
       triggerDownload(fseqBlob, "lightshow.fseq");
     }
   };
@@ -653,7 +790,7 @@ function triggerDownload(blob: Blob, filename: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  
+
   setTimeout(() => {
     URL.revokeObjectURL(url);
   }, 100);
@@ -668,11 +805,11 @@ function resetUI() {
   parsedInfo = null;
   selectedDifficultyFile = null;
   loadedFiles = {};
-  
+
   // Clear inputs
   zipInput.value = "";
   folderInput.value = "";
-  
+
   // Dynamic layout changes
   setUIState("upload");
   resetOutputs();
@@ -700,7 +837,11 @@ function resetOutputs() {
 }
 
 // --- Visualizer Playback Logic ---
-function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: number, audioBlob: Blob | null) {
+function initVisualizer(
+  effects: Record<string, LightEffect[]>,
+  durationSec: number,
+  audioBlob: Blob | null,
+) {
   cleanupVisualizer();
 
   visualizer = new LightshowVisualizer(visualizerCanvas, (isLoading) => {
@@ -714,7 +855,9 @@ function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: num
   if (carModelTabs) {
     const activeCarTab = carModelTabs.querySelector(".car-tab.active");
     if (activeCarTab) {
-      selectedModel = activeCarTab.getAttribute("data-car") as "Model_S" | "Cybertruck" || "Model_S";
+      selectedModel =
+        (activeCarTab.getAttribute("data-car") as "Model_S" | "Cybertruck") ||
+        "Model_S";
     }
   }
 
@@ -726,14 +869,20 @@ function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: num
   });
 
   playbackDurationMs = durationSec * 1000;
-  timelineSlider.max = playbackDurationMs.toString();
-  timelineSlider.value = "0";
   timeDuration.innerText = formatTime(playbackDurationMs);
   timeCurrent.innerText = "0:00";
   currentTimeMs = 0;
   isPlaying = false;
-  setupTrimSliders(playbackDurationMs);
-  
+
+  // Set up integrated timeline and draw density canvas
+  if (activeConverter) {
+    drawCommandDensity(
+      activeConverter.getLightEffects(),
+      activeConverter.getDurationSeconds() * 1000,
+    );
+  }
+  updateTimelineUI();
+
   updatePlayPauseUI();
 
   if (audioBlob) {
@@ -763,7 +912,10 @@ function startPlayback() {
   if (audio) {
     audio.currentTime = currentTimeMs / 1000;
     audio.play().catch((err) => {
-      console.warn("Audio autoplay blocked or failed. Syncing timeline manually.", err);
+      console.warn(
+        "Audio autoplay blocked or failed. Syncing timeline manually.",
+        err,
+      );
     });
   }
   startPlaybackLoop();
@@ -820,7 +972,6 @@ function stopPlaybackLoop() {
 
 function seekTo(timeMs: number) {
   currentTimeMs = Math.max(0, Math.min(timeMs, playbackDurationMs));
-  timelineSlider.value = currentTimeMs.toString();
   timeCurrent.innerText = formatTime(currentTimeMs);
 
   if (audio) {
@@ -830,6 +981,8 @@ function seekTo(timeMs: number) {
   if (visualizer) {
     visualizer.updatePlaybackTime(currentTimeMs);
   }
+
+  updateTimelineUI();
 }
 
 function togglePlayPause() {
@@ -850,6 +1003,10 @@ function updateMuteUI() {
   const isMuted = audio ? audio.muted : false;
   iconVolumeOn.classList.toggle("hidden", isMuted);
   iconVolumeOff.classList.toggle("hidden", !isMuted);
+
+  // Bulletproof display toggle fallback to prevent dual icon rendering
+  (iconVolumeOn as HTMLElement).style.display = isMuted ? "none" : "";
+  (iconVolumeOff as HTMLElement).style.display = isMuted ? "" : "none";
 }
 
 // --- Player DOM UI controls ---
@@ -857,19 +1014,28 @@ function updatePlayPauseUI() {
   if (isPlaying) {
     iconPlay.classList.add("hidden");
     iconPause.classList.remove("hidden");
+
+    // Bulletproof display toggle fallback to prevent dual icon rendering
+    (iconPlay as HTMLElement).style.display = "none";
+    (iconPause as HTMLElement).style.display = "";
   } else {
     iconPlay.classList.remove("hidden");
     iconPause.classList.add("hidden");
+
+    // Bulletproof display toggle fallback to prevent dual icon rendering
+    (iconPlay as HTMLElement).style.display = "";
+    (iconPause as HTMLElement).style.display = "none";
   }
 }
 
 function updatePlaybackUI() {
-  timelineSlider.value = currentTimeMs.toString();
   timeCurrent.innerText = formatTime(currentTimeMs);
 
   if (visualizer) {
     visualizer.updatePlaybackTime(currentTimeMs);
   }
+
+  updateTimelineUI();
 }
 
 function formatTime(ms: number): string {
@@ -905,29 +1071,13 @@ function setupVisualizerControls() {
   btnPlayPause.addEventListener("click", togglePlayPause);
   btnMute.addEventListener("click", toggleMute);
 
-  // Timeline Scrubbing
-  timelineSlider.addEventListener("input", (e) => {
-    const val = parseFloat((e.target as HTMLInputElement).value);
-    seekTo(val);
-  });
-
-  trimStartSlider.addEventListener("input", () => {
-    applyTrimSliderInput("start");
-  });
-
-  trimEndSlider.addEventListener("input", () => {
-    applyTrimSliderInput("end");
-  });
-
-  trimStartSlider.addEventListener("change", updateTrimmedOutputs);
-  trimEndSlider.addEventListener("change", updateTrimmedOutputs);
+  // Setup pointer-dragging interactions for timeline seeking & trimming
+  setupTimelineDragging();
 
   btnResetTrim.addEventListener("click", () => {
     if (!activeConverter) return;
     trimStartMs = 0;
     trimEndMs = activeConverter.getDurationSeconds() * 1000;
-    trimStartSlider.value = trimStartMs.toString();
-    trimEndSlider.value = trimEndMs.toString();
     updateTrimmedOutputs();
   });
 
@@ -935,6 +1085,17 @@ function setupVisualizerControls() {
   btnResetCamera.addEventListener("click", () => {
     if (visualizer) {
       visualizer.resetCameraView();
+    }
+  });
+
+  // Handle window resizing to redraw the command density canvas
+  window.addEventListener("resize", () => {
+    if (activeConverter) {
+      drawCommandDensity(
+        activeConverter.getLightEffects(),
+        activeConverter.getDurationSeconds() * 1000,
+      );
+      updateTimelineUI();
     }
   });
 
@@ -947,15 +1108,17 @@ function setupVisualizerControls() {
         if (clickedTab.classList.contains("active")) {
           return;
         }
-        
-        const carModel = clickedTab.getAttribute("data-car") as "Model_S" | "Cybertruck";
-        
+
+        const carModel = clickedTab.getAttribute("data-car") as
+          | "Model_S"
+          | "Cybertruck";
+
         // Instant visual update of tabs
         carTabs.forEach((t) => t.classList.remove("active"));
         clickedTab.classList.add("active");
-        
+
         logConsole(`Switching car model to: ${carModel}`);
-        
+
         // Yield execution to the browser so the visual tab activation paints instantly
         setTimeout(async () => {
           if (visualizer) {
@@ -968,48 +1131,261 @@ function setupVisualizerControls() {
   }
 }
 
-function setupTrimSliders(durationMs: number) {
-  trimStartSlider.min = "0";
-  trimStartSlider.max = durationMs.toString();
-  trimStartSlider.step = "20";
-  trimStartSlider.value = trimStartMs.toString();
+function setupTimelineDragging() {
+  if (!integratedTimelineContainer) return;
 
-  trimEndSlider.min = "0";
-  trimEndSlider.max = durationMs.toString();
-  trimEndSlider.step = "20";
-  trimEndSlider.value = trimEndMs.toString();
+  trimHandleStart.addEventListener("pointerdown", (e) => {
+    if (!activeConverter) return;
+    e.stopPropagation();
+    trimHandleStart.setPointerCapture(e.pointerId);
+    isDraggingStart = true;
+    wasPlayingBeforeDrag = isPlaying;
+    pausePlayback();
+  });
 
-  updateTrimTrackUI();
+  trimHandleStart.addEventListener("pointermove", (e) => {
+    if (!isDraggingStart || !activeConverter) return;
+    const targetMs = getMsFromPointer(e);
+    const minTrimLengthMs = 1000;
+
+    // Guard trim end boundary
+    trimStartMs = Math.max(0, Math.min(targetMs, trimEndMs - minTrimLengthMs));
+    updateTimelineUI();
+    updatePredictedTrimValidation(); // Instant feedback, no debounced lag!
+  });
+
+  trimHandleStart.addEventListener("pointerup", (e) => {
+    if (!isDraggingStart) return;
+    trimHandleStart.releasePointerCapture(e.pointerId);
+    isDraggingStart = false;
+
+    // QoL: If play head is within 10% of the active region duration from the start, snap playhead to start trim
+    if (currentTimeMs < playbackDurationMs * 0.1) {
+      currentTimeMs = 0;
+    }
+
+    updateTrimmedOutputs();
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
+
+  trimHandleStart.addEventListener("pointercancel", (e) => {
+    if (!isDraggingStart) return;
+    trimHandleStart.releasePointerCapture(e.pointerId);
+    isDraggingStart = false;
+    updateTrimmedOutputs();
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
+
+  trimHandleEnd.addEventListener("pointerdown", (e) => {
+    if (!activeConverter) return;
+    e.stopPropagation();
+    trimHandleEnd.setPointerCapture(e.pointerId);
+    isDraggingEnd = true;
+    wasPlayingBeforeDrag = isPlaying;
+    pausePlayback();
+  });
+
+  trimHandleEnd.addEventListener("pointermove", (e) => {
+    if (!isDraggingEnd || !activeConverter) return;
+    const maxDuration = activeConverter.getDurationSeconds() * 1000;
+    const targetMs = getMsFromPointer(e);
+    const minTrimLengthMs = 1000;
+
+    // Guard trim start boundary
+    trimEndMs = Math.max(
+      trimStartMs + minTrimLengthMs,
+      Math.min(targetMs, maxDuration),
+    );
+    updateTimelineUI();
+    updatePredictedTrimValidation(); // Instant feedback, no debounced lag!
+  });
+
+  trimHandleEnd.addEventListener("pointerup", (e) => {
+    if (!isDraggingEnd) return;
+    trimHandleEnd.releasePointerCapture(e.pointerId);
+    isDraggingEnd = false;
+    updateTrimmedOutputs();
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
+
+  trimHandleEnd.addEventListener("pointercancel", (e) => {
+    if (!isDraggingEnd) return;
+    trimHandleEnd.releasePointerCapture(e.pointerId);
+    isDraggingEnd = false;
+    updateTrimmedOutputs();
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
+
+  integratedTimelineContainer.addEventListener("pointerdown", (e) => {
+    if (!activeConverter) return;
+    integratedTimelineContainer.setPointerCapture(e.pointerId);
+    isSeekingTimeline = true;
+    wasPlayingBeforeDrag = isPlaying;
+    pausePlayback();
+    handleTimelineSeek(e);
+  });
+
+  integratedTimelineContainer.addEventListener("pointermove", (e) => {
+    if (!isSeekingTimeline || !activeConverter) return;
+    handleTimelineSeek(e);
+  });
+
+  integratedTimelineContainer.addEventListener("pointerup", (e) => {
+    if (!isSeekingTimeline) return;
+    integratedTimelineContainer.releasePointerCapture(e.pointerId);
+    isSeekingTimeline = false;
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
+
+  integratedTimelineContainer.addEventListener("pointercancel", (e) => {
+    if (!isSeekingTimeline) return;
+    integratedTimelineContainer.releasePointerCapture(e.pointerId);
+    isSeekingTimeline = false;
+    if (wasPlayingBeforeDrag) {
+      startPlayback();
+    }
+  });
 }
 
-function applyTrimSliderInput(activeHandle: "start" | "end") {
-  const minTrimLengthMs = 1000;
-  let nextStart = parseFloat(trimStartSlider.value);
-  let nextEnd = parseFloat(trimEndSlider.value);
-  const maxDuration = activeConverter ? activeConverter.getDurationSeconds() * 1000 : playbackDurationMs;
+function getMsFromPointer(e: PointerEvent): number {
+  if (!activeConverter) return 0;
+  const rect = integratedTimelineContainer.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const pct = Math.max(0, Math.min(1, x / rect.width));
+  const maxDuration = activeConverter.getDurationSeconds() * 1000;
+  return pct * maxDuration;
+}
 
-  if (activeHandle === "start") {
-    nextStart = Math.min(nextStart, nextEnd - minTrimLengthMs);
-  } else {
-    nextEnd = Math.max(nextEnd, nextStart + minTrimLengthMs);
+function handleTimelineSeek(e: PointerEvent) {
+  if (!activeConverter) return;
+  const targetMs = getMsFromPointer(e);
+  // Clamp seek inside the active/trimmed window
+  const relativeSeekMs = Math.max(
+    0,
+    Math.min(targetMs - trimStartMs, playbackDurationMs),
+  );
+  seekTo(relativeSeekMs);
+}
+
+function drawCommandDensity(
+  effects: Record<string, LightEffect[]>,
+  durationMs: number,
+) {
+  if (!timelineDensityCanvas) return;
+  const width = timelineDensityCanvas.clientWidth;
+  const height = timelineDensityCanvas.clientHeight;
+  if (width === 0 || height === 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  timelineDensityCanvas.width = width * dpr;
+  timelineDensityCanvas.height = height * dpr;
+
+  const ctx = timelineDensityCanvas.getContext("2d");
+  if (!ctx) return;
+  ctx.clearRect(
+    0,
+    0,
+    timelineDensityCanvas.width,
+    timelineDensityCanvas.height,
+  );
+  ctx.scale(dpr, dpr);
+
+  // Extract all effect start times
+  const times: number[] = [];
+  for (const track in effects) {
+    if (Array.isArray(effects[track])) {
+      for (const effect of effects[track]) {
+        times.push(effect.startTime);
+      }
+    }
   }
 
-  trimStartMs = Math.max(0, Math.min(nextStart, maxDuration - minTrimLengthMs));
-  trimEndMs = Math.max(trimStartMs + minTrimLengthMs, Math.min(nextEnd, maxDuration));
-  trimStartSlider.value = trimStartMs.toString();
-  trimEndSlider.value = trimEndMs.toString();
+  if (times.length === 0 || durationMs <= 0) return;
 
-  updateTrimTrackUI();
-  updatePredictedTrimValidation();
+  // Let each bin take 4.5px (3px bar + 1.5px gap)
+  const numBins = Math.max(1, Math.floor(width / 4.5));
+  const bins = new Array(numBins).fill(0);
+
+  for (const time of times) {
+    const binIdx = Math.floor((time / durationMs) * numBins);
+    if (binIdx >= 0 && binIdx < numBins) {
+      bins[binIdx]++;
+    }
+  }
+
+  const maxVal = Math.max(...bins, 1);
+  const isDark =
+    document.documentElement.getAttribute("data-theme") === "shadcn-dark";
+  const barColor = isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.2)";
+  ctx.fillStyle = barColor;
+
+  for (let i = 0; i < numBins; i++) {
+    const count = bins[i];
+    if (count === 0) continue;
+
+    const x = i * 4.5 + 1.5;
+    const maxBarHeight = height - 12;
+    const barHeight = Math.max(2, (count / maxVal) * maxBarHeight);
+    const y = (height - barHeight) / 2;
+
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x, y, 3, barHeight, 1.5);
+    } else {
+      ctx.rect(x, y, 3, barHeight);
+    }
+    ctx.fill();
+  }
 }
 
-function updateTrimTrackUI() {
-  const maxDuration = activeConverter ? activeConverter.getDurationSeconds() * 1000 : playbackDurationMs;
-  const startPct = maxDuration > 0 ? (trimStartMs / maxDuration) * 100 : 0;
-  const endPct = maxDuration > 0 ? (trimEndMs / maxDuration) * 100 : 100;
-  trimTrackFill.style.left = `${startPct}%`;
-  trimTrackFill.style.width = `${Math.max(0, endPct - startPct)}%`;
-  trimRangeLabel.textContent = `${formatTime(trimStartMs)} - ${formatTime(trimEndMs)} (${formatTime(trimEndMs - trimStartMs)})`;
+function updateTimelineUI() {
+  if (!activeConverter) return;
+  const maxDuration = activeConverter.getDurationSeconds() * 1000;
+  if (maxDuration <= 0) return;
+
+  const startPct = (trimStartMs / maxDuration) * 100;
+  const endPct = (trimEndMs / maxDuration) * 100;
+
+  // Absolute playhead position
+  const absolutePlayheadMs = Math.min(
+    trimEndMs,
+    Math.max(trimStartMs, trimStartMs + currentTimeMs),
+  );
+  const playheadPct = (absolutePlayheadMs / maxDuration) * 100;
+
+  if (timelineLeftOverlay) {
+    timelineLeftOverlay.style.width = `${startPct}%`;
+  }
+  if (timelineRightOverlay) {
+    timelineRightOverlay.style.width = `${100 - endPct}%`;
+  }
+  if (timelineActiveRegion) {
+    timelineActiveRegion.style.left = `${startPct}%`;
+    timelineActiveRegion.style.width = `${endPct - startPct}%`;
+  }
+  if (timelinePlayhead) {
+    timelinePlayhead.style.left = `${playheadPct}%`;
+  }
+  if (trimHandleStart) {
+    trimHandleStart.style.left = `${startPct}%`;
+  }
+  if (trimHandleEnd) {
+    trimHandleEnd.style.left = `${endPct}%`;
+  }
+
+  if (trimRangeLabel) {
+    trimRangeLabel.textContent = `${formatTime(trimStartMs)} - ${formatTime(trimEndMs)} (${formatTime(trimEndMs - trimStartMs)})`;
+  }
 }
 
 function updateTrimmedOutputs() {
@@ -1021,15 +1397,19 @@ function updateTrimmedOutputs() {
   generatedFseq = activeConverter.generateTrimmedFseq(trimRange);
   generatedZip = null;
 
-  const trimmedDurationMs = activeConverter.getTrimmedDurationSeconds(trimRange) * 1000;
+  const trimmedDurationMs =
+    activeConverter.getTrimmedDurationSeconds(trimRange) * 1000;
   playbackDurationMs = trimmedDurationMs;
-  timelineSlider.max = trimmedDurationMs.toString();
   timeDuration.innerText = formatTime(trimmedDurationMs);
 
   if (currentTimeMs > trimmedDurationMs) {
     seekTo(trimmedDurationMs);
   } else {
-    updatePlaybackUI();
+    if (visualizer) {
+      visualizer.updatePlaybackTime(currentTimeMs);
+    }
+    updateTimelineUI();
+    timeCurrent.innerText = formatTime(currentTimeMs);
   }
 
   if (visualizer) {
@@ -1037,8 +1417,12 @@ function updateTrimmedOutputs() {
     visualizer.updatePlaybackTime(currentTimeMs);
   }
 
-  updateTrimTrackUI();
-  runSimplifiedValidation(trimmedDurationMs / 1000, LightshowConverter.countLightEffects(activeEffects), !!originalWav);
+  updateTimelineUI();
+  runSimplifiedValidation(
+    trimmedDurationMs / 1000,
+    LightshowConverter.countLightEffects(activeEffects),
+    !!originalWav,
+  );
   scheduleTrimmedAudioRefresh();
 }
 
@@ -1046,9 +1430,15 @@ function updatePredictedTrimValidation() {
   if (!activeConverter) return;
 
   const trimRange = { startMs: trimStartMs, endMs: trimEndMs };
-  const trimmedDurationSeconds = activeConverter.getTrimmedDurationSeconds(trimRange);
-  const trimmedEffectsCount = activeConverter.getTrimmedTotalEffectsCount(trimRange);
-  runSimplifiedValidation(trimmedDurationSeconds, trimmedEffectsCount, !!originalWav);
+  const trimmedDurationSeconds =
+    activeConverter.getTrimmedDurationSeconds(trimRange);
+  const trimmedEffectsCount =
+    activeConverter.getTrimmedTotalEffectsCount(trimRange);
+  runSimplifiedValidation(
+    trimmedDurationSeconds,
+    trimmedEffectsCount,
+    !!originalWav,
+  );
 }
 
 function getCurrentTrimKey(): string {
@@ -1069,7 +1459,9 @@ function scheduleTrimmedAudioRefresh() {
   }, 180);
 }
 
-async function ensureTrimmedAudio(version = pendingTrimAudioVersion): Promise<void> {
+async function ensureTrimmedAudio(
+  version = pendingTrimAudioVersion,
+): Promise<void> {
   if (!originalWav) return;
 
   const trimKey = getCurrentTrimKey();
@@ -1087,7 +1479,10 @@ async function ensureTrimmedAudio(version = pendingTrimAudioVersion): Promise<vo
     replacePreviewAudio(trimmedWav);
     setupDownloadUrls();
   } catch (err) {
-    logConsole(`Warning: Audio trim failed: ${err instanceof Error ? err.message : String(err)}`, "warning");
+    logConsole(
+      `Warning: Audio trim failed: ${err instanceof Error ? err.message : String(err)}`,
+      "warning",
+    );
   }
 }
 
@@ -1127,7 +1522,11 @@ function replacePreviewAudio(audioBlob: Blob) {
 }
 
 // --- Tesla Compatibility Validator ---
-function runSimplifiedValidation(durationSeconds: number, totalEffects: number, hasAudio: boolean) {
+function runSimplifiedValidation(
+  durationSeconds: number,
+  totalEffects: number,
+  hasAudio: boolean,
+) {
   const commandsCount = totalEffects * 2;
   const commandLimit = 3500;
   const commandRatio = commandsCount / commandLimit;
@@ -1136,16 +1535,24 @@ function runSimplifiedValidation(durationSeconds: number, totalEffects: number, 
   // Get DOM elements
   const statusBadge = document.getElementById("validator-status-badge")!;
   const commandRatioEl = document.getElementById("validator-command-ratio")!;
-  const commandProgressEl = document.getElementById("validator-command-progress")!;
-  
+  const commandProgressEl = document.getElementById(
+    "validator-command-progress",
+  )!;
+
   const metricDuration = document.getElementById("validator-metric-duration")!;
   const metricAudio = document.getElementById("validator-metric-audio")!;
   const warningsContainer = document.getElementById("validator-warnings")!;
 
-  const checkMemoryIcon = document.getElementById("validator-check-memory-icon")!;
-  const checkDurationIcon = document.getElementById("validator-check-duration-icon")!;
+  const checkMemoryIcon = document.getElementById(
+    "validator-check-memory-icon",
+  )!;
+  const checkDurationIcon = document.getElementById(
+    "validator-check-duration-icon",
+  )!;
   const checkAudioIcon = document.getElementById("validator-check-audio-icon")!;
-  const headerIconContainer = document.getElementById("validator-header-icon-container")!;
+  const headerIconContainer = document.getElementById(
+    "validator-header-icon-container",
+  )!;
 
   // Clear lists & statuses
   const warnings: string[] = [];
@@ -1154,20 +1561,26 @@ function runSimplifiedValidation(durationSeconds: number, totalEffects: number, 
   // 1. Command Count Limit Check
   commandRatioEl.textContent = `${commandsCount.toLocaleString()} / ${commandLimit.toLocaleString()}`;
   commandProgressEl.style.width = `${Math.min(commandPercentage, 100)}%`;
-  commandProgressEl.className = "h-full rounded-full transition-all duration-500";
-  
+  commandProgressEl.className =
+    "h-full rounded-full transition-all duration-500";
+
   if (commandsCount > commandLimit) {
     // Failed: Memory budget exceeded
     commandProgressEl.classList.add("bg-red-400", "dark:bg-red-500/60");
-    commandRatioEl.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
+    commandRatioEl.className =
+      "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
     checkMemoryIcon.textContent = "✗";
-    checkMemoryIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
+    checkMemoryIcon.className =
+      "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
     isFailed = true;
-    warnings.push(`<strong>Memory limit exceeded:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to load or crash on the vehicle.`);
+    warnings.push(
+      `<strong>Memory limit exceeded:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to load on the vehicle. Please trim the light show.`,
+    );
   } else {
     // Passed memory check
     commandProgressEl.classList.add("bg-black");
-    commandRatioEl.className = "font-mono text-[10px] text-muted-foreground font-semibold";
+    commandRatioEl.className =
+      "font-mono text-[10px] text-muted-foreground font-semibold";
     checkMemoryIcon.textContent = "✓";
     checkMemoryIcon.className = "text-success text-xs font-mono font-black";
   }
@@ -1181,15 +1594,20 @@ function runSimplifiedValidation(durationSeconds: number, totalEffects: number, 
   if (durationSeconds > 14400) {
     // Failed: Too long (> 4 hours)
     checkDurationIcon.textContent = "✗";
-    checkDurationIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
-    metricDuration.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
+    checkDurationIcon.className =
+      "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
+    metricDuration.className =
+      "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
     isFailed = true;
-    warnings.push(`<strong>Show too long:</strong> Show duration (<strong>${formattedDuration}</strong>) exceeds the 4-hour playback limit supported by Tesla vehicles.`);
+    warnings.push(
+      `<strong>Show too long:</strong> Show duration (<strong>${formattedDuration}</strong>) exceeds the 4-hour playback limit supported by Tesla vehicles.`,
+    );
   } else {
     // Passed duration check
     checkDurationIcon.textContent = "✓";
     checkDurationIcon.className = "text-success text-xs font-mono font-black";
-    metricDuration.className = "font-mono text-[10px] text-base-content font-medium";
+    metricDuration.className =
+      "font-mono text-[10px] text-base-content font-medium";
   }
 
   // 3. Audio WAV Track Check
@@ -1197,43 +1615,53 @@ function runSimplifiedValidation(durationSeconds: number, totalEffects: number, 
     metricAudio.textContent = "WAV OK";
     checkAudioIcon.textContent = "✓";
     checkAudioIcon.className = "text-success text-xs font-mono font-black";
-    metricAudio.className = "font-mono text-[10px] text-base-content font-medium";
+    metricAudio.className =
+      "font-mono text-[10px] text-base-content font-medium";
   } else {
     metricAudio.textContent = "Missing";
     checkAudioIcon.textContent = "✗";
-    checkAudioIcon.className = "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
-    metricAudio.className = "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
+    checkAudioIcon.className =
+      "text-red-500/90 dark:text-red-400/90 text-xs font-mono font-black";
+    metricAudio.className =
+      "font-mono text-[10px] text-red-500/90 dark:text-red-400/90 font-semibold";
     isFailed = true;
-    warnings.push(`<strong>Audio track missing:</strong> No WAV audio was generated. Make sure your Beat Saber map contains an .ogg or .egg audio track so it can be transcoded.`);
+    warnings.push(
+      `<strong>Audio track missing:</strong> No WAV audio was generated. Make sure your Beat Saber map contains an .ogg or .egg audio track so it can be transcoded.`,
+    );
   }
 
   // Set overall status badge & top-left header icon
   if (isFailed) {
     statusBadge.textContent = "Failed";
-    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border select-none bg-red-500/10 text-red-500 border-red-500/20 dark:bg-red-500/5 dark:text-red-400/90 dark:border-red-500/10 transition-all-300";
-    
-    headerIconContainer.className = "flex items-center justify-center text-red-500/90 dark:text-red-400/90 shrink-0 transition-all-300";
+    statusBadge.className =
+      "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border select-none bg-red-500/10 text-red-500 border-red-500/20 dark:bg-red-500/5 dark:text-red-400/90 dark:border-red-500/10 transition-all-300";
+
+    headerIconContainer.className =
+      "flex items-center justify-center text-red-500/90 dark:text-red-400/90 shrink-0 transition-all-300";
     headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m15 9-6 6M9 9l6 6"/></svg>`;
   } else {
     statusBadge.textContent = "Passed";
-    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border-0 select-none bg-success/10 text-success transition-all-300";
-    
-    headerIconContainer.className = "flex items-center justify-center text-green-500 dark:text-green-400 shrink-0 transition-all-300";
+    statusBadge.className =
+      "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border-0 select-none bg-success/10 text-success transition-all-300";
+
+    headerIconContainer.className =
+      "flex items-center justify-center text-green-500 dark:text-green-400 shrink-0 transition-all-300";
     headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
   }
 
   // Populate warnings
   if (warnings.length > 0) {
     warningsContainer.classList.remove("hidden");
-    warningsContainer.className = "text-xs space-y-1.5 p-3 rounded-2xl bg-warning/5 border border-warning/15 text-warning font-medium";
-    
+    warningsContainer.className =
+      "text-xs space-y-1.5 p-3 rounded-2xl bg-warning/5 border border-warning/15 text-warning font-medium";
+
     warningsContainer.innerHTML = warnings
       .map(
         (w) => `
         <div class="flex items-start gap-1.5 shrink-0 leading-relaxed font-medium">
           <span class="text-xs mt-0.5 select-none">⚠️</span>
           <span>${w}</span>
-        </div>`
+        </div>`,
       )
       .join("");
   } else {

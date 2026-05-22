@@ -252,168 +252,102 @@ body {
   outline: none;
 }
 
-/* Custom premium styling for the timeline scrubber */
-input[type="range"]#timeline-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  background: oklch(80% 0 0);
-  border-radius: 9999px;
-  height: 4px;
-  outline: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-[data-theme="shadcn-dark"] input[type="range"]#timeline-slider {
-  background: oklch(25% 0 0);
-}
-
-input[type="range"]#timeline-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  cursor: pointer;
-  border: 2px solid var(--color-base-100);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-input[type="range"]#timeline-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.4);
-}
-
-input[type="range"]#timeline-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  cursor: pointer;
-  border: 2px solid var(--color-base-100);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-input[type="range"]#timeline-slider::-moz-range-thumb:hover {
-  transform: scale(1.4);
-}
-
-.trim-panel {
-  border-top: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
-  padding-top: 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.trim-slider {
+/* Integrated Scrubber and Timeline Component (Clean & flat) */
+#integrated-timeline-container {
   position: relative;
-  height: 26px;
+  width: 100%;
+  height: 64px;
+  border-radius: 12px;
+  background-color: color-mix(in oklch, var(--color-base-content) 5%, transparent);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+}
+
+[data-theme="shadcn-dark"] #integrated-timeline-container {
+  background-color: color-mix(in oklch, var(--color-base-content) 5%, transparent);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+}
+
+/* Semi-transparent flat overlays for cut-off sections (Flat theme-matched washouts) */
+#timeline-left-overlay,
+#timeline-right-overlay {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background-color: var(--color-base-100);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#timeline-left-overlay {
+  left: 0;
+}
+
+#timeline-right-overlay {
+  right: 0;
+}
+
+/* Active range highlight layer between brackets */
+#timeline-active-region {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  background-color: color-mix(in oklch, var(--color-primary) 3%, transparent);
+  z-index: 4;
+}
+
+/* Solid blue playhead seeker line, absolutely flat, no shadows or glows */
+#timeline-playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: #3b82f6 !important; /* Nice vibrant blue */
+  pointer-events: none;
+  z-index: 15;
+  transform: translateX(-1px);
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Simple, flat vertical bracket handles */
+#trim-handle-start,
+#trim-handle-end {
+  position: absolute;
+  top: 0;
+  width: 20px;
+  height: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  z-index: 20;
+  user-select: none;
 }
 
-.trim-slider::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 5px;
-  transform: translateY(-50%);
-  border-radius: 9999px;
-  background: color-mix(in oklch, var(--color-base-content) 12%, transparent);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+#trim-handle-start .w-1\.5,
+#trim-handle-end .w-1\.5 {
+  width: 4px;
+  height: 60%;
+  border-radius: 2px;
+  background-color: var(--color-primary);
+  transition: transform 0.1s ease, background-color 0.1s ease;
 }
 
-.trim-track-fill {
-  position: absolute;
-  top: 50%;
-  height: 5px;
-  transform: translateY(-50%);
-  border-radius: 9999px;
-  background: color-mix(in oklch, var(--color-base-content) 54%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-base-100) 70%, transparent);
+#trim-handle-start:hover .w-1\.5,
+#trim-handle-end:hover .w-1\.5 {
+  background-color: var(--color-accent);
+  transform: scaleY(1.1);
 }
 
-.trim-range-input {
-  -webkit-appearance: none;
-  appearance: none;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 26px;
-  margin: 0;
-  background: transparent;
-  pointer-events: none;
-}
-
-.trim-range-input::-webkit-slider-runnable-track {
-  height: 26px;
-  background: transparent;
-}
-
-.trim-range-input::-moz-range-track {
-  height: 26px;
-  background: transparent;
-}
-
-.trim-range-input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  pointer-events: auto;
-  width: 14px;
-  height: 26px;
-  border-radius: 3px;
-  border-color: var(--color-base-content);
-  border-style: solid;
-  background: transparent;
-  cursor: grab;
-  box-shadow: none;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.trim-range-input::-moz-range-thumb {
-  pointer-events: auto;
-  width: 14px;
-  height: 26px;
-  border-radius: 3px;
-  border-color: var(--color-base-content);
-  border-style: solid;
-  background: transparent;
-  cursor: grab;
-  box-shadow: none;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-#trim-start-slider::-webkit-slider-thumb {
-  border-width: 2px 0 2px 3px;
-}
-
-#trim-start-slider::-moz-range-thumb {
-  border-width: 2px 0 2px 3px;
-}
-
-#trim-end-slider::-webkit-slider-thumb {
-  border-width: 2px 3px 2px 0;
-}
-
-#trim-end-slider::-moz-range-thumb {
-  border-width: 2px 3px 2px 0;
-}
-
-.trim-range-input:active::-webkit-slider-thumb {
-  cursor: grabbing;
-  transform: scale(1.08);
-  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
-}
-
-.trim-range-input:active::-moz-range-thumb {
-  cursor: grabbing;
-  transform: scale(1.08);
-  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+#trim-handle-start:active .w-1\.5,
+#trim-handle-end:active .w-1\.5 {
+  background-color: var(--color-primary);
+  transform: scaleY(1.15) scaleX(1.2);
 }
 
 /* Custom horizontal tap selection buttons */
@@ -450,3 +384,9 @@ input[type="range"]#timeline-slider::-moz-range-thumb:hover {
 .progress-sweep {
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Ensure hidden element states are always prioritized and respected */
+.hidden {
+  display: none !important;
+}
+

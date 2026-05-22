@@ -126,3 +126,4 @@ dmypy.json
 node_modules/
 dist/
 .vite/
+temp_tesla_show

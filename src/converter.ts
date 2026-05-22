@@ -194,8 +194,20 @@ export class LightshowConverter {
   }
 
   public getTrimmedTotalEffectsCount(trimRange: TrimRange): number {
-    const trimmedEffects = this.getTrimmedLightEffects(trimRange);
-    return LightshowConverter.countLightEffects(trimmedEffects);
+    this.ensureEffectsBuilt();
+    const startMs = Math.max(0, Math.min(trimRange.startMs, trimRange.endMs));
+    const endMs = Math.max(startMs, trimRange.endMs);
+
+    let count = 0;
+    for (const effects of Object.values(this.effectsData)) {
+      for (let i = 0; i < effects.length; i++) {
+        const effect = effects[i];
+        if (effect.endTime > startMs && effect.startTime < endMs && effect.endTime > effect.startTime) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 
   public getTrimmedDurationSeconds(trimRange: TrimRange): number {

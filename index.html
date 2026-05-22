@@ -171,8 +171,10 @@
 
           <!-- Playback Controls Scrubber -->
           <div class="glass-panel p-4 rounded-3xl flex flex-col gap-3">
-            <div class="flex flex-col sm:flex-row items-center gap-4 justify-between w-full">
-              <!-- Play / Pause & Volume controls -->
+
+            <!-- Top Controls Row -->
+            <div class="flex flex-wrap items-center justify-between gap-4 w-full mt-1">
+              <!-- Play / Pause / Mute & Time Display -->
               <div class="flex items-center gap-2 select-none">
                 <button id="btn-play-pause" class="btn btn-circle btn-primary btn-sm w-9 h-9 flex items-center justify-center shadow-md border-0" aria-label="Play/Pause">
                   <!-- Play Icon -->
@@ -187,31 +189,54 @@
                   <!-- Mute Icon (hidden by default) -->
                   <svg id="icon-volume-off" class="w-3.5 h-3.5 fill-current hidden" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
                 </button>
+
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground border-l border-base-300 pl-3">
+                  <span id="time-current" class="font-mono text-base-content select-none">0:00</span>
+                  <span class="opacity-30">/</span>
+                  <span id="time-duration" class="font-mono select-none">0:00</span>
+                </div>
               </div>
 
-              <!-- Timeline scrubber slider -->
-              <div class="flex-grow flex items-center gap-3 w-full sm:w-auto">
-                <span id="time-current" class="text-xs font-mono text-muted-foreground w-10 text-right select-none">0:00</span>
-                <input type="range" id="timeline-slider" class="flex-grow accent-primary" value="0" min="0" max="100" step="0.1" />
-                <span id="time-duration" class="text-xs font-mono text-muted-foreground w-10 text-left select-none">0:00</span>
+              <!-- Trim details and reset button -->
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Trimmed:</span>
+                  <span id="trim-range-label" class="text-[10px] font-mono text-base-content font-semibold truncate">0:00 - 0:00</span>
+                </div>
+                <button id="btn-reset-trim" class="btn btn-ghost btn-xs text-[9px] h-6 min-h-0 px-3 rounded-full uppercase font-bold text-muted-foreground border border-base-300 hover:bg-base-200">
+                  Reset Trim
+                </button>
               </div>
             </div>
 
-            <!-- Trim Range Controls -->
-            <div class="trim-panel">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-baseline gap-2 min-w-0">
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Trim</span>
-                  <span id="trim-range-label" class="text-[10px] font-mono text-base-content truncate">0:00 - 0:00</span>
-                </div>
-                <button id="btn-reset-trim" class="btn btn-ghost btn-xs text-[9px] h-6 min-h-0 px-3 rounded-full uppercase font-bold text-muted-foreground border-0 bg-transparent">
-                  Reset
-                </button>
+            <!-- Integrated Timeline Container (Flat aesthetic, no glow/shadows) -->
+            <div id="integrated-timeline-container" class="relative w-full h-16 rounded-xl bg-base-200/50 border border-base-300 overflow-hidden cursor-crosshair select-none">
+              <!-- Command Density Canvas -->
+              <canvas id="timeline-density-canvas" class="absolute inset-0 w-full h-full block pointer-events-none"></canvas>
+
+              <!-- Left and Right Greyed-out flat overlays -->
+              <div id="timeline-left-overlay" class="absolute top-0 left-0 h-full bg-base-100/50 pointer-events-none"></div>
+              <div id="timeline-right-overlay" class="absolute top-0 right-0 h-full bg-base-100/50 pointer-events-none"></div>
+
+              <!-- Active Highlight Range -->
+              <div id="timeline-active-region" class="absolute top-0 h-full border-l border-r border-primary/20 pointer-events-none"></div>
+
+              <!-- Seeker Line (Playhead) - simple solid 2px blue line, absolutely flat, no knobs, glows, or shadows -->
+              <div id="timeline-playhead" class="absolute top-0 w-0.5 h-full pointer-events-none z-10" style="background-color: #3b82f6 !important;">
               </div>
-              <div id="trim-slider" class="trim-slider" aria-label="Light show trim range">
-                <div id="trim-track-fill" class="trim-track-fill"></div>
-                <input type="range" id="trim-start-slider" class="trim-range-input" value="0" min="0" max="100" step="20" aria-label="Trim start" />
-                <input type="range" id="trim-end-slider" class="trim-range-input" value="100" min="0" max="100" step="20" aria-label="Trim end" />
+
+              <!-- Trim Bracket Handles - clean and flat, no shadows -->
+              <div id="trim-handle-start" class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20">
+                <div class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100">
+                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+                </div>
+              </div>
+              <div id="trim-handle-end" class="absolute top-0 w-5 h-full -ml-2.5 flex items-center justify-center cursor-ew-resize group select-none z-20">
+                <div class="w-1.5 h-3/5 rounded bg-primary flex flex-col justify-between py-1 group-hover:scale-y-110 transition-transform duration-100">
+                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+                  <div class="w-full h-0.5 bg-primary-content opacity-40"></div>
+                </div>
               </div>
             </div>
           </div>
