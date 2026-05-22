@@ -5,7 +5,7 @@
 ### Convert Beat Saber maps into playable Tesla Light Shows, completely in your browser.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
 [![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=three.design&logoColor=white)](https://threejs.org/)
 [![Tesla](https://img.shields.io/badge/Tesla-CC0000?style=for-the-badge&logo=tesla&logoColor=white)](https://www.tesla.com/)
 [![Beat Saber](https://img.shields.io/badge/Beat%20Saber-FF6B6B?style=for-the-badge&logo=oculus&logoColor=white)](https://beatsaber.com/)
@@ -20,7 +20,7 @@
 
 **Tesla Beat Mapper** is a high-performance, beautiful, and completely free client-side web application that automatically translates custom Beat Saber level maps into physical Tesla Light Show sequences (`.fseq` and `.xsq` formats) and synchronized audio.
 
-By shifting from our legacy command-line tools to a fully visual browser environment, anyone can now convert, preview, optimize, and validate their custom light shows without needing terminal setups, xLights, or even a physical car nearby.
+By compiling the sequence directly to `.fseq` inside the browser, **Tesla Beat Mapper fully eliminates the requirement of installing or opening the xLights application** to create and export your custom show. Anyone can now convert, preview, optimize, and validate their custom light shows without needing terminal setups, xLights, or even a physical car nearby.
 
 ---
 
@@ -31,7 +31,7 @@ By shifting from our legacy command-line tools to a fully visual browser environ
 - **Integrated Tesla Compatibility Validator**: Instantly monitors vehicle hardware memory limitations, verifying show duration, audio presence, and the strict **3,500-command limit** in real-time.
 - **Interactive Dual-Handle Timeline Trimming**: Easily crop the song and sequence using a visual scrubber and dual trim handles. See commands count and compatibility update on-the-fly to fit memory limits perfectly.
 - **V2 & V3 Beatmap Support**: Handles both standard legacy (V2) and modern (V3) Beat Saber map formats automatically.
-- **Instant ZIP Bundle Export**: Generates and packages the finalized `.fseq` sequence, transcoded `.wav` audio, and `.xsq` (xLights XML sequence) into a single flash-drive-ready ZIP in one click.
+- **Instant ZIP Bundle Export**: Generates and packages the finalized `.fseq` sequence, transcoded `.wav` audio, and `.xsq` (xLights XML sequence) into a single flash-drive-ready ZIP in one click, **completely removing the requirement to open xLights for compilation**.
 
 ---
 
