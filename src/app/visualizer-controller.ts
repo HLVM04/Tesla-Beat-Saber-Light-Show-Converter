@@ -38,6 +38,10 @@ export class VisualizerController {
   private isDraggingStart = false;
   private isDraggingEnd = false;
   private isSeekingTimeline = false;
+  private isDraggingTrimWindow = false;
+  private initialTrimStartMs = 0;
+  private initialTrimEndMs = 0;
+  private initialDragPointerMs = 0;
   private wasPlayingBeforeDrag = false;
   private activeConverter: LightshowConverter | null = null;
   private activeEffects: Record<string, LightEffect[]> = {};
@@ -457,6 +461,25 @@ export class VisualizerController {
 
     integratedTimelineContainer.addEventListener("pointerdown", (event) => {
       if (!this.activeConverter) return;
+
+      const targetMs = this.getMsFromPointer(event);
+      if (
+        event.shiftKey &&
+        targetMs >= this.trimStartMs &&
+        targetMs <= this.trimEndMs
+      ) {
+        integratedTimelineContainer.setPointerCapture(event.pointerId);
+        this.isDraggingTrimWindow = true;
+        this.initialTrimStartMs = this.trimStartMs;
+        this.initialTrimEndMs = this.trimEndMs;
+        this.initialDragPointerMs = targetMs;
+        this.wasPlayingBeforeDrag = this.isPlaying;
+        this.pausePlayback();
+        integratedTimelineContainer.style.cursor = "grabbing";
+        event.stopPropagation();
+        return;
+      }
+
       integratedTimelineContainer.setPointerCapture(event.pointerId);
       this.isSeekingTimeline = true;
       this.wasPlayingBeforeDrag = this.isPlaying;
@@ -465,25 +488,96 @@ export class VisualizerController {
     });
 
     integratedTimelineContainer.addEventListener("pointermove", (event) => {
-      if (!this.isSeekingTimeline || !this.activeConverter) return;
-      this.handleTimelineSeek(event);
+      if (!this.activeConverter) return;
+
+      if (this.isDraggingTrimWindow) {
+        const targetMs = this.getMsFromPointer(event);
+        const deltaMs = targetMs - this.initialDragPointerMs;
+        const maxDuration = this.activeConverter.getDurationSeconds() * 1000;
+        const currentLengthMs = this.initialTrimEndMs - this.initialTrimStartMs;
+
+        let newStartMs = this.initialTrimStartMs + deltaMs;
+        let newEndMs = this.initialTrimEndMs + deltaMs;
+
+        if (newStartMs < 0) {
+          newStartMs = 0;
+          newEndMs = currentLengthMs;
+        } else if (newEndMs > maxDuration) {
+          newEndMs = maxDuration;
+          newStartMs = maxDuration - currentLengthMs;
+        }
+
+        this.trimStartMs = newStartMs;
+        this.trimEndMs = newEndMs;
+
+        this.updateTimelineUI();
+        this.updatePredictedTrimValidation();
+        return;
+      }
+
+      if (this.isSeekingTimeline) {
+        this.handleTimelineSeek(event);
+        return;
+      }
+
+      // Hover styling support when holding shift within trimmed region
+      const targetMs = this.getMsFromPointer(event);
+      if (
+        event.shiftKey &&
+        targetMs >= this.trimStartMs &&
+        targetMs <= this.trimEndMs
+      ) {
+        integratedTimelineContainer.style.cursor = "grab";
+      } else {
+        integratedTimelineContainer.style.cursor = "";
+      }
     });
 
     integratedTimelineContainer.addEventListener("pointerup", (event) => {
-      if (!this.isSeekingTimeline) return;
-      integratedTimelineContainer.releasePointerCapture(event.pointerId);
-      this.isSeekingTimeline = false;
-      if (this.wasPlayingBeforeDrag) {
-        this.startPlayback();
+      if (this.isDraggingTrimWindow) {
+        integratedTimelineContainer.releasePointerCapture(event.pointerId);
+        this.isDraggingTrimWindow = false;
+        this.updateTrimmedOutputs();
+        integratedTimelineContainer.style.cursor = event.shiftKey ? "grab" : "";
+        if (this.wasPlayingBeforeDrag) {
+          this.startPlayback();
+        }
+        return;
+      }
+
+      if (this.isSeekingTimeline) {
+        integratedTimelineContainer.releasePointerCapture(event.pointerId);
+        this.isSeekingTimeline = false;
+        if (this.wasPlayingBeforeDrag) {
+          this.startPlayback();
+        }
       }
     });
 
     integratedTimelineContainer.addEventListener("pointercancel", (event) => {
-      if (!this.isSeekingTimeline) return;
-      integratedTimelineContainer.releasePointerCapture(event.pointerId);
-      this.isSeekingTimeline = false;
-      if (this.wasPlayingBeforeDrag) {
-        this.startPlayback();
+      if (this.isDraggingTrimWindow) {
+        integratedTimelineContainer.releasePointerCapture(event.pointerId);
+        this.isDraggingTrimWindow = false;
+        this.updateTrimmedOutputs();
+        integratedTimelineContainer.style.cursor = "";
+        if (this.wasPlayingBeforeDrag) {
+          this.startPlayback();
+        }
+        return;
+      }
+
+      if (this.isSeekingTimeline) {
+        integratedTimelineContainer.releasePointerCapture(event.pointerId);
+        this.isSeekingTimeline = false;
+        if (this.wasPlayingBeforeDrag) {
+          this.startPlayback();
+        }
+      }
+    });
+
+    integratedTimelineContainer.addEventListener("pointerleave", () => {
+      if (!this.isDraggingTrimWindow) {
+        integratedTimelineContainer.style.cursor = "";
       }
     });
   }
