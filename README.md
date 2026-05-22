@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Tesla Beat Mapper ⚡
+# Tesla Beat Mapper
 
 ### Convert Beat Saber maps into playable Tesla Light Shows, completely in your browser.
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 🌟 Overview
+## Overview
 
 **Tesla Beat Mapper** is a high-performance, beautiful, and completely free client-side web application that automatically translates custom Beat Saber level maps into physical Tesla Light Show sequences (`.fseq` and `.xsq` formats) and synchronized audio.
 
@@ -24,28 +24,28 @@ By shifting from our legacy command-line tools to a fully visual browser environ
 
 ---
 
-## ✨ Features
+## Features
 
-- **🚀 100% Client-Side Compiler**: Fast, secure, and private. All audio decoding, note-mapping, packaging, and compression run entirely in your web browser. No files are uploaded to any server.
-- **🎨 Interactive 3D Visualizer**: A fully responsive real-time 3D preview powered by **Three.js**. Watch virtual Tesla models (Model S and Cybertruck) light up, blink, move windows, and activate signals in sync with the map’s custom lighting tracks.
-- **⚠️ Integrated Tesla Compatibility Validator**: Instantly monitors vehicle hardware memory limitations, verifying show duration, audio presence, and the strict **3,500-command limit** in real-time.
-- **✂️ Interactive Dual-Handle Timeline Trimming**: Easily crop the song and sequence using a visual scrubber and dual trim handles. See commands count and compatibility update on-the-fly to fit memory limits perfectly.
-- **📂 V2 & V3 Beatmap Support**: Handles both standard legacy (V2) and modern (V3) Beat Saber map formats automatically.
-- **📦 Instant ZIP Bundle Export**: Generates and packages the finalized `.fseq` sequence, transcoded `.wav` audio, and `.xsq` (xLights XML sequence) into a single flash-drive-ready ZIP in one click.
+- **100% Client-Side Compiler**: Fast, secure, and private. All audio decoding, note-mapping, packaging, and compression run entirely in your web browser. No files are uploaded to any server.
+- **Interactive 3D Visualizer**: A fully responsive real-time 3D preview powered by **Three.js**. Watch virtual Tesla models (Model S and Cybertruck) light up, blink, move windows, and activate signals in sync with the map’s custom lighting tracks.
+- **Integrated Tesla Compatibility Validator**: Instantly monitors vehicle hardware memory limitations, verifying show duration, audio presence, and the strict **3,500-command limit** in real-time.
+- **Interactive Dual-Handle Timeline Trimming**: Easily crop the song and sequence using a visual scrubber and dual trim handles. See commands count and compatibility update on-the-fly to fit memory limits perfectly.
+- **V2 & V3 Beatmap Support**: Handles both standard legacy (V2) and modern (V3) Beat Saber map formats automatically.
+- **Instant ZIP Bundle Export**: Generates and packages the finalized `.fseq` sequence, transcoded `.wav` audio, and `.xsq` (xLights XML sequence) into a single flash-drive-ready ZIP in one click.
 
 ---
 
-## 💡 How It Works
+## How It Works
 
 Tesla Beat Mapper parses the structure of custom Beat Saber level zip packages (loaded from local drives or BeatSaver) and maps game actions to automotive controls:
 
-- **🔴 Left (Red) Notes & Directions**: Mapped directly to left-side lighting groups (Left Headlights, Inner/Outer Main Beams, Left Fog, Left Signature, Left Turn, and Side Repeater).
-- **🔵 Right (Blue) Notes & Directions**: Mapped directly to right-side lighting groups (Right Headlights, Inner/Outer Main Beams, Right Fog, Right Signature, Right Turn, and Side Repeater).
-- **🎶 Lighting Events**: Backing events are converted into physical actions (Brake Lights, License Plate lights, Rear Tail/Fog lights, Falcon Doors, Mirror Folding, and Window Rolldowns!).
+- **Left (Red) Notes & Directions**: Mapped directly to left-side lighting groups (Left Headlights, Inner/Outer Main Beams, Left Fog, Left Signature, Left Turn, and Side Repeater).
+- **Right (Blue) Notes & Directions**: Mapped directly to right-side lighting groups (Right Headlights, Inner/Outer Main Beams, Right Fog, Right Signature, Right Turn, and Side Repeater).
+- **Lighting Events**: Backing events are converted into physical actions (Brake Lights, License Plate lights, Rear Tail/Fog lights, Falcon Doors, Mirror Folding, and Window Rolldowns!).
 
 ---
 
-## 🚀 Local Development
+## Local Development
 
 To run the web app on your local machine:
 
@@ -79,7 +79,7 @@ To run the web app on your local machine:
 
 ---
 
-## 💾 Post-Processing & Car Installation
+## Post-Processing & Car Installation
 
 1. Drag-and-drop a downloaded Beat Saber map ZIP into the web app.
 2. Select your desired difficulty and verify/trim your sequence to stay within the **3,500 command limit**.
@@ -92,9 +92,10 @@ To run the web app on your local machine:
 
 ---
 
-## 🏛️ Legacy Repositories
+## Legacy Repositories
 
 The previous command-line iterations of this project are preserved on their respective archives:
 - For the original Python version, checkout the [`python-old`](https://github.com/your-username/Tesla-Beat-Saber-Light-Show-Converter/tree/python-old) branch.
 - For the high-performance Go CLI tool, checkout the [`go-legacy`](https://github.com/your-username/Tesla-Beat-Saber-Light-Show-Converter/tree/go-legacy) branch.
+
 
