@@ -4,6 +4,7 @@ export interface AppElements {
   folderInput: HTMLInputElement;
   btnBrowseZip: HTMLElement;
   btnBrowseFolder: HTMLElement;
+  btnLoadDemo: HTMLButtonElement;
   coverPreview: HTMLImageElement;
   coverPlaceholder: HTMLElement;
   songTitle: HTMLElement;
@@ -67,6 +68,7 @@ export function getAppElements(): AppElements {
     folderInput: requiredElement<HTMLInputElement>("folder-input"),
     btnBrowseZip: requiredElement("btn-browse-zip"),
     btnBrowseFolder: requiredElement("btn-browse-folder"),
+    btnLoadDemo: requiredElement<HTMLButtonElement>("btn-load-demo"),
     coverPreview: requiredElement<HTMLImageElement>("cover-preview"),
     coverPlaceholder: requiredElement("cover-placeholder"),
     songTitle: requiredElement("song-title"),

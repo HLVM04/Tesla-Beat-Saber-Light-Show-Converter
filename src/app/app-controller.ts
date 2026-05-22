@@ -26,6 +26,7 @@ export class AppController {
     setupTheme(this.elements, () => this.visualizerController?.redrawDensity());
     this.setupDragAndDrop();
     this.setupFileSelects();
+    this.setupDemoLoader();
     this.setupConversion();
     this.setupDownloadUrls();
 
@@ -94,6 +95,43 @@ export class AppController {
     folderInput.addEventListener("change", async () => {
       if (folderInput.files && folderInput.files.length > 0) {
         await this.processFileList(folderInput.files);
+      }
+    });
+  }
+
+  private setupDemoLoader() {
+    const { btnLoadDemo } = this.elements;
+
+    btnLoadDemo.addEventListener("click", async (event) => {
+      event.stopPropagation(); // Prevent opening browse file window since it is inside drop-zone
+
+      const originalText = btnLoadDemo.innerHTML;
+      btnLoadDemo.disabled = true;
+      btnLoadDemo.innerHTML = `<span class="loading loading-spinner loading-xs mr-2"></span>Loading...`;
+
+      try {
+        logConsole("Fetching demo map ZIP archive...");
+        const response = await fetch("/InvincibleDeafKeyBeatMapDemo.zip");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const demoFile = new File([blob], "InvincibleDeafKeyBeatMapDemo.zip", {
+          type: "application/zip",
+        });
+
+        logConsole("Demo map downloaded successfully. Extracting...");
+        await this.processZipFile(demoFile);
+      } catch (err) {
+        logConsole(
+          `Failed to load demo map: ${err instanceof Error ? err.message : String(err)}`,
+          "error",
+        );
+        alert("Failed to download the demo map. Please try again or check your internet connection.");
+      } finally {
+        btnLoadDemo.disabled = false;
+        btnLoadDemo.innerHTML = originalText;
       }
     });
   }
