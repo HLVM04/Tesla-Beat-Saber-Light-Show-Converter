@@ -14,6 +14,11 @@ export interface LightEffect {
   endTime: number;   // in milliseconds
 }
 
+export interface TrimRange {
+  startMs: number;
+  endMs: number;
+}
+
 // Beat Saber V2 Formats
 export interface Note {
   _time: number;
@@ -154,7 +159,7 @@ export class LightshowConverter {
     this.processNotes();
     this.processEvents();
 
-    return this.buildXMLContent();
+    return this.buildXMLContent(this.effectsData, this.getDurationSeconds());
   }
 
   public generateFseq(): Uint8Array {
@@ -168,10 +173,84 @@ export class LightshowConverter {
       this.processEvents();
     }
 
-    const durationMs = this.lastBlockTime + SequenceBufferTime * 1000;
+    return this.buildFseqContent(this.effectsData, this.getDurationSeconds() * 1000);
+  }
+
+  public generateTrimmedLightshow(trimRange: TrimRange): string {
+    this.ensureEffectsBuilt();
+    const trimmedEffects = this.getTrimmedLightEffects(trimRange);
+    return this.buildXMLContent(trimmedEffects, this.getTrimmedDurationSeconds(trimRange));
+  }
+
+  public generateTrimmedFseq(trimRange: TrimRange): Uint8Array {
+    this.ensureEffectsBuilt();
+    const trimmedEffects = this.getTrimmedLightEffects(trimRange);
+    return this.buildFseqContent(trimmedEffects, this.getTrimmedDurationSeconds(trimRange) * 1000);
+  }
+
+  public getTrimmedLightEffects(trimRange: TrimRange): Record<string, LightEffect[]> {
+    this.ensureEffectsBuilt();
+    return LightshowConverter.trimLightEffects(this.effectsData, trimRange);
+  }
+
+  public getTrimmedTotalEffectsCount(trimRange: TrimRange): number {
+    const trimmedEffects = this.getTrimmedLightEffects(trimRange);
+    return LightshowConverter.countLightEffects(trimmedEffects);
+  }
+
+  public getTrimmedDurationSeconds(trimRange: TrimRange): number {
+    const startMs = Math.max(0, Math.min(trimRange.startMs, this.getDurationSeconds() * 1000));
+    const endMs = Math.max(startMs, Math.min(trimRange.endMs, this.getDurationSeconds() * 1000));
+    return Math.max(0, endMs - startMs) / 1000;
+  }
+
+  public static trimLightEffects(
+    effectsData: Record<string, LightEffect[]>,
+    trimRange: TrimRange
+  ): Record<string, LightEffect[]> {
+    const startMs = Math.max(0, Math.min(trimRange.startMs, trimRange.endMs));
+    const endMs = Math.max(startMs, trimRange.endMs);
+    const trimmed: Record<string, LightEffect[]> = {};
+
+    for (const [lightName, effects] of Object.entries(effectsData)) {
+      const clippedEffects = effects
+        .map((effect) => ({
+          startTime: Math.max(effect.startTime, startMs) - startMs,
+          endTime: Math.min(effect.endTime, endMs) - startMs,
+        }))
+        .filter((effect) => effect.endTime > effect.startTime);
+
+      if (clippedEffects.length > 0) {
+        trimmed[lightName] = clippedEffects;
+      }
+    }
+
+    return trimmed;
+  }
+
+  public static countLightEffects(effectsData: Record<string, LightEffect[]>): number {
+    let count = 0;
+    for (const effects of Object.values(effectsData)) {
+      count += effects.length;
+    }
+    return count;
+  }
+
+  private ensureEffectsBuilt(): void {
+    if (!this.effectsData || Object.keys(this.effectsData).length === 0) {
+      this.effects = {};
+      this.effectsData = {};
+      this.lastBlockTime = 0;
+      this.calculateLastBlockTime();
+      this.processNotes();
+      this.processEvents();
+    }
+  }
+
+  private buildFseqContent(effectsData: Record<string, LightEffect[]>, durationMs: number): Uint8Array {
     const stepTimeMs = 20;
     const channelCount = 200;
-    const frameCount = Math.ceil(durationMs / stepTimeMs);
+    const frameCount = Math.max(1, Math.ceil(durationMs / stepTimeMs));
     const headerSize = 32;
     const bufferSize = headerSize + channelCount * frameCount;
     const buffer = new Uint8Array(bufferSize);
@@ -280,7 +359,7 @@ export class LightshowConverter {
       const t = f * stepTimeMs;
       const frameStartOffset = headerSize + f * channelCount;
 
-      for (const [lightName, effects] of Object.entries(this.effectsData)) {
+      for (const [lightName, effects] of Object.entries(effectsData)) {
         const channelIndex = nameToChannel[lightName];
         if (channelIndex === undefined) continue;
 
@@ -304,11 +383,7 @@ export class LightshowConverter {
   }
 
   public getTotalEffectsCount(): number {
-    let count = 0;
-    for (const effects of Object.values(this.effectsData)) {
-      count += effects.length;
-    }
-    return count;
+    return LightshowConverter.countLightEffects(this.effectsData);
   }
 
   public getDurationSeconds(): number {
@@ -433,25 +508,30 @@ export class LightshowConverter {
     return LightBindingsRear[bindingIndex] || null;
   }
 
-  private buildXMLContent(): string {
+  private buildXMLContent(effectsData: Record<string, LightEffect[]>, durationSeconds: number): string {
     let xmlContent = TEMPLATE_XSQ;
 
     // Apply template replacements
     const mediaPath = "LightshowOutput/lightshow.wav";
-    const durationSec = (this.lastBlockTime / 1000 + SequenceBufferTime).toFixed(3);
+    const durationSec = durationSeconds.toFixed(3);
 
     xmlContent = xmlContent.replace("MEDIA_FILE_PATH", mediaPath);
     xmlContent = xmlContent.replace("SEQUENCE_DURATION", durationSec);
 
     // Add effects to their respective elements
-    for (const [lightName, effects] of Object.entries(this.effects)) {
+    for (const [lightName, effects] of Object.entries(effectsData)) {
       if (effects.length > 0) {
         // Find the element in the XML and replace its empty EffectLayer
         const elementPattern = `<Element type="model" name="${lightName}">
       <EffectLayer/>
     </Element>`;
 
-        const effectsContent = effects.join("\n");
+        const effectsContent = effects
+          .map(
+            (effect) =>
+              `        <Effect ref="0" name="On" startTime="${Math.floor(effect.startTime)}" endTime="${Math.floor(effect.endTime)}" palette="0"/>`
+          )
+          .join("\n");
         const replacement = `<Element type="model" name="${lightName}">
       <EffectLayer>
 ${effectsContent}

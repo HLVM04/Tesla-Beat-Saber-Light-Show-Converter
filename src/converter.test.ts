@@ -222,6 +222,35 @@ describe("Lightshow Converter Logic", () => {
       expect(hasOff).toBe(true);
     });
 
+    it("should trim light effects, shift them to zero, and update command counts", () => {
+      const converter = new LightshowConverter(120, mockMapData, 100);
+      converter.generateLightshow();
+
+      const trimRange = { startMs: 1000, endMs: 1400 };
+      const trimmedEffects = converter.getTrimmedLightEffects(trimRange);
+      const flatEffects = Object.values(trimmedEffects).flat();
+
+      expect(flatEffects.length).toBeGreaterThan(0);
+      expect(flatEffects.every((effect) => effect.startTime >= 0 && effect.endTime <= 400)).toBe(true);
+      expect(flatEffects.some((effect) => effect.startTime === 250 && effect.endTime === 400)).toBe(true);
+      expect(converter.getTrimmedTotalEffectsCount(trimRange)).toBe(flatEffects.length);
+      expect(converter.getTrimmedDurationSeconds(trimRange)).toBeCloseTo(0.4);
+    });
+
+    it("should generate trimmed XML and FSEQ output with the trimmed duration", () => {
+      const converter = new LightshowConverter(120, mockMapData, 100);
+      converter.generateLightshow();
+
+      const trimRange = { startMs: 1000, endMs: 1400 };
+      const xml = converter.generateTrimmedLightshow(trimRange);
+      const fseq = converter.generateTrimmedFseq(trimRange);
+      const view = new DataView(fseq.buffer);
+
+      expect(xml).toContain("<sequenceDuration>0.400</sequenceDuration>");
+      expect(xml).toContain('startTime="250" endTime="400"');
+      expect(view.getUint32(14, true)).toBe(20);
+    });
+
     it("should correctly convert maps that only contain events and no notes, producing valid positive duration", () => {
       const eventOnlyMap: MapData = {
         _version: "2.0.0",

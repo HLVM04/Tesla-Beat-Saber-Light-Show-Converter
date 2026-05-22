@@ -196,6 +196,24 @@
                 <span id="time-duration" class="text-xs font-mono text-muted-foreground w-10 text-left select-none">0:00</span>
               </div>
             </div>
+
+            <!-- Trim Range Controls -->
+            <div class="trim-panel">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-baseline gap-2 min-w-0">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Trim</span>
+                  <span id="trim-range-label" class="text-[10px] font-mono text-base-content truncate">0:00 - 0:00</span>
+                </div>
+                <button id="btn-reset-trim" class="btn btn-ghost btn-xs text-[9px] h-6 min-h-0 px-3 rounded-full uppercase font-bold text-muted-foreground border-0 bg-transparent">
+                  Reset
+                </button>
+              </div>
+              <div id="trim-slider" class="trim-slider" aria-label="Light show trim range">
+                <div id="trim-track-fill" class="trim-track-fill"></div>
+                <input type="range" id="trim-start-slider" class="trim-range-input" value="0" min="0" max="100" step="20" aria-label="Trim start" />
+                <input type="range" id="trim-end-slider" class="trim-range-input" value="100" min="0" max="100" step="20" aria-label="Trim end" />
+              </div>
+            </div>
           </div>
         </div>
 

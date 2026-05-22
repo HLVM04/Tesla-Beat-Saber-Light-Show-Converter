@@ -39,7 +39,35 @@ export async function convertOggToWav(
 /**
  * Encodes an AudioBuffer into a WAV Blob.
  */
-function audioBufferToWav(buffer: AudioBuffer): Blob {
+export async function trimWavBlob(wavBlob: Blob, startMs: number, endMs: number): Promise<Blob> {
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContextClass) {
+    throw new Error("Web Audio API is not supported in this browser.");
+  }
+
+  const audioCtx = new AudioContextClass();
+
+  try {
+    const decodedBuffer = await audioCtx.decodeAudioData(await wavBlob.arrayBuffer());
+    const sampleRate = decodedBuffer.sampleRate;
+    const startSample = Math.max(0, Math.floor((startMs / 1000) * sampleRate));
+    const endSample = Math.min(decodedBuffer.length, Math.ceil((endMs / 1000) * sampleRate));
+    const frameCount = Math.max(1, endSample - startSample);
+    const trimmedBuffer = audioCtx.createBuffer(decodedBuffer.numberOfChannels, frameCount, sampleRate);
+
+    for (let channel = 0; channel < decodedBuffer.numberOfChannels; channel++) {
+      const source = decodedBuffer.getChannelData(channel);
+      const target = trimmedBuffer.getChannelData(channel);
+      target.set(source.subarray(startSample, endSample));
+    }
+
+    return audioBufferToWav(trimmedBuffer);
+  } finally {
+    await audioCtx.close();
+  }
+}
+
+export function audioBufferToWav(buffer: AudioBuffer): Blob {
   const numOfChan = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const format = 1; // Raw PCM

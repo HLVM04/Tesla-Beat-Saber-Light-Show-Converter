@@ -300,6 +300,122 @@ input[type="range"]#timeline-slider::-moz-range-thumb:hover {
   transform: scale(1.4);
 }
 
+.trim-panel {
+  border-top: 1px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  padding-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.trim-slider {
+  position: relative;
+  height: 26px;
+  display: flex;
+  align-items: center;
+}
+
+.trim-slider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.trim-track-fill {
+  position: absolute;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--color-base-content) 54%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-base-100) 70%, transparent);
+}
+
+.trim-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.trim-range-input::-webkit-slider-runnable-track {
+  height: 26px;
+  background: transparent;
+}
+
+.trim-range-input::-moz-range-track {
+  height: 26px;
+  background: transparent;
+}
+
+.trim-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 14px;
+  height: 26px;
+  border-radius: 3px;
+  border-color: var(--color-base-content);
+  border-style: solid;
+  background: transparent;
+  cursor: grab;
+  box-shadow: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.trim-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 26px;
+  border-radius: 3px;
+  border-color: var(--color-base-content);
+  border-style: solid;
+  background: transparent;
+  cursor: grab;
+  box-shadow: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+#trim-start-slider::-webkit-slider-thumb {
+  border-width: 2px 0 2px 3px;
+}
+
+#trim-start-slider::-moz-range-thumb {
+  border-width: 2px 0 2px 3px;
+}
+
+#trim-end-slider::-webkit-slider-thumb {
+  border-width: 2px 3px 2px 0;
+}
+
+#trim-end-slider::-moz-range-thumb {
+  border-width: 2px 3px 2px 0;
+}
+
+.trim-range-input:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+
+.trim-range-input:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+
 /* Custom horizontal tap selection buttons */
 .diff-tab, .type-tab, .car-tab {
   border-radius: 9999px;

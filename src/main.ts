@@ -2,7 +2,7 @@ import "./style.css";
 import JSZip from "jszip";
 import { parseMapData, LightshowConverter } from "./converter";
 import type { InfoData, LightEffect } from "./converter";
-import { convertOggToWav } from "./wav-encoder";
+import { convertOggToWav, trimWavBlob } from "./wav-encoder";
 import { LightshowVisualizer } from "./visualizer";
 
 // --- State Variables ---
@@ -19,6 +19,14 @@ let generatedXsq: string | null = null;
 let generatedFseq: Uint8Array | null = null;
 let generatedWav: Blob | null = null;
 let generatedZip: Blob | null = null;
+let originalWav: Blob | null = null;
+let activeConverter: LightshowConverter | null = null;
+let activeEffects: Record<string, LightEffect[]> = {};
+let trimStartMs = 0;
+let trimEndMs = 0;
+let pendingTrimAudioVersion = 0;
+let generatedWavTrimKey = "";
+let trimAudioTimer: number | null = null;
 
 // --- Visualizer State ---
 let visualizer: LightshowVisualizer | null = null;
@@ -73,6 +81,11 @@ const iconVolumeOff = document.getElementById("icon-volume-off")!;
 const timelineSlider = document.getElementById("timeline-slider")! as HTMLInputElement;
 const timeCurrent = document.getElementById("time-current")!;
 const timeDuration = document.getElementById("time-duration")!;
+const trimStartSlider = document.getElementById("trim-start-slider")! as HTMLInputElement;
+const trimEndSlider = document.getElementById("trim-end-slider")! as HTMLInputElement;
+const trimTrackFill = document.getElementById("trim-track-fill")!;
+const trimRangeLabel = document.getElementById("trim-range-label")!;
+const btnResetTrim = document.getElementById("btn-reset-trim")! as HTMLButtonElement;
 const btnResetCamera = document.getElementById("btn-reset-camera")! as HTMLButtonElement;
 const typeTabsContainer = document.getElementById("type-tabs-container")!;
 const typeTabs = document.getElementById("type-tabs")!;
@@ -498,6 +511,7 @@ function setupConversion() {
       await updateProgress(40, "Translating light events...");
       const converter = new LightshowConverter(parsedInfo._beatsPerMinute, normalizedMap, 100);
       generatedXsq = converter.generateLightshow();
+      activeConverter = converter;
       logConsole(`Successfully compiled lightshow layout XML.`, "success");
 
       // 2b. Generate FSEQ Binary
@@ -526,6 +540,7 @@ function setupConversion() {
           generatedWav = await convertOggToWav(audioFile.data, (progressMsg) => {
             logConsole(`Transcoder: ${progressMsg}`);
           });
+          originalWav = generatedWav;
           logConsole(`Audio transcoding completed successfully!`, "success");
         } catch (audioErr) {
           logConsole(`Warning: Audio transcoding failed: ${audioErr instanceof Error ? audioErr.message : String(audioErr)}`, "warning");
@@ -536,17 +551,7 @@ function setupConversion() {
 
       // 4. Create output ZIP bundle
       await updateProgress(90, "Packaging outputs bundle ZIP...");
-      const outZip = new JSZip();
-      
-      if (generatedFseq) {
-        outZip.file("lightshow.fseq", generatedFseq);
-      }
-      outZip.file("lightshow.xsq", generatedXsq);
-      if (generatedWav) {
-        outZip.file("lightshow.wav", generatedWav);
-      }
-      
-      generatedZip = await outZip.generateAsync({ type: "blob" });
+      generatedZip = await createOutputZip();
       logConsole(`Bundle ZIP created successfully!`, "success");
 
       // Enable download options
@@ -554,7 +559,7 @@ function setupConversion() {
 
       // Run Tesla Compatibility Validation
       logConsole("Running Tesla compatibility checks...");
-      runSimplifiedValidation(converter, !!generatedWav);
+      runSimplifiedValidation(converter.getDurationSeconds(), converter.getTotalEffectsCount(), !!generatedWav);
 
       await updateProgress(100, "Done! Initializing visualizer...");
       
@@ -566,6 +571,10 @@ function setupConversion() {
       if (generatedXsq) {
         const effects = converter.getLightEffects();
         const durationSec = converter.getDurationSeconds();
+        activeEffects = effects;
+        trimStartMs = 0;
+        trimEndMs = durationSec * 1000;
+        generatedWavTrimKey = generatedWav ? getCurrentTrimKey() : "";
         initVisualizer(effects, durationSec, generatedWav);
       }
 
@@ -578,36 +587,56 @@ function setupConversion() {
 }
 
 // --- Configure Downloads URLs & Actions ---
+async function createOutputZip(): Promise<Blob | null> {
+  if (!generatedXsq) return null;
+
+  const outZip = new JSZip();
+  if (generatedFseq) {
+    outZip.file("lightshow.fseq", generatedFseq);
+  }
+  outZip.file("lightshow.xsq", generatedXsq);
+  if (generatedWav) {
+    outZip.file("lightshow.wav", generatedWav);
+  }
+
+  return outZip.generateAsync({ type: "blob" });
+}
+
 function setupDownloadUrls() {
   btnDownloadBundle.onclick = null;
   btnDownloadFseq.onclick = null;
   btnDownloadXsq.onclick = null;
   btnDownloadWav.onclick = null;
 
-  if (generatedZip) {
-    btnDownloadBundle.onclick = () => {
-      triggerDownload(generatedZip!, "lightshow.zip");
-    };
-  }
+  btnDownloadBundle.onclick = async () => {
+    await ensureTrimmedAudio();
+    if (!generatedZip) {
+      generatedZip = await createOutputZip();
+    }
+    if (generatedZip) {
+      triggerDownload(generatedZip, "lightshow.zip");
+    }
+  };
 
-  if (generatedFseq) {
-    const fseqBlob = new Blob([generatedFseq as any], { type: "application/octet-stream" });
-    btnDownloadFseq.onclick = () => {
+  btnDownloadFseq.onclick = () => {
+    if (generatedFseq) {
+      const fseqBlob = new Blob([generatedFseq as any], { type: "application/octet-stream" });
       triggerDownload(fseqBlob, "lightshow.fseq");
-    };
-  }
+    }
+  };
 
-  if (generatedXsq) {
-    const xsqBlob = new Blob([generatedXsq], { type: "text/xml" });
-    btnDownloadXsq.onclick = () => {
+  btnDownloadXsq.onclick = () => {
+    if (generatedXsq) {
+      const xsqBlob = new Blob([generatedXsq], { type: "text/xml" });
       triggerDownload(xsqBlob, "lightshow.xsq");
-    };
-  }
+    }
+  };
 
   if (generatedWav) {
     btnDownloadWav.removeAttribute("disabled");
     btnDownloadWav.classList.remove("btn-disabled");
-    btnDownloadWav.onclick = () => {
+    btnDownloadWav.onclick = async () => {
+      await ensureTrimmedAudio();
       triggerDownload(generatedWav!, "lightshow.wav");
     };
   } else {
@@ -654,6 +683,17 @@ function resetOutputs() {
   generatedFseq = null;
   generatedWav = null;
   generatedZip = null;
+  originalWav = null;
+  activeConverter = null;
+  activeEffects = {};
+  trimStartMs = 0;
+  trimEndMs = 0;
+  pendingTrimAudioVersion++;
+  generatedWavTrimKey = "";
+  if (trimAudioTimer !== null) {
+    window.clearTimeout(trimAudioTimer);
+    trimAudioTimer = null;
+  }
   btnDownloadWav.setAttribute("disabled", "true");
   btnDownloadWav.classList.add("btn-disabled");
   cleanupVisualizer();
@@ -692,6 +732,7 @@ function initVisualizer(effects: Record<string, LightEffect[]>, durationSec: num
   timeCurrent.innerText = "0:00";
   currentTimeMs = 0;
   isPlaying = false;
+  setupTrimSliders(playbackDurationMs);
   
   updatePlayPauseUI();
 
@@ -870,6 +911,26 @@ function setupVisualizerControls() {
     seekTo(val);
   });
 
+  trimStartSlider.addEventListener("input", () => {
+    applyTrimSliderInput("start");
+  });
+
+  trimEndSlider.addEventListener("input", () => {
+    applyTrimSliderInput("end");
+  });
+
+  trimStartSlider.addEventListener("change", updateTrimmedOutputs);
+  trimEndSlider.addEventListener("change", updateTrimmedOutputs);
+
+  btnResetTrim.addEventListener("click", () => {
+    if (!activeConverter) return;
+    trimStartMs = 0;
+    trimEndMs = activeConverter.getDurationSeconds() * 1000;
+    trimStartSlider.value = trimStartMs.toString();
+    trimEndSlider.value = trimEndMs.toString();
+    updateTrimmedOutputs();
+  });
+
   // Reset Camera View
   btnResetCamera.addEventListener("click", () => {
     if (visualizer) {
@@ -907,10 +968,166 @@ function setupVisualizerControls() {
   }
 }
 
+function setupTrimSliders(durationMs: number) {
+  trimStartSlider.min = "0";
+  trimStartSlider.max = durationMs.toString();
+  trimStartSlider.step = "20";
+  trimStartSlider.value = trimStartMs.toString();
+
+  trimEndSlider.min = "0";
+  trimEndSlider.max = durationMs.toString();
+  trimEndSlider.step = "20";
+  trimEndSlider.value = trimEndMs.toString();
+
+  updateTrimTrackUI();
+}
+
+function applyTrimSliderInput(activeHandle: "start" | "end") {
+  const minTrimLengthMs = 1000;
+  let nextStart = parseFloat(trimStartSlider.value);
+  let nextEnd = parseFloat(trimEndSlider.value);
+  const maxDuration = activeConverter ? activeConverter.getDurationSeconds() * 1000 : playbackDurationMs;
+
+  if (activeHandle === "start") {
+    nextStart = Math.min(nextStart, nextEnd - minTrimLengthMs);
+  } else {
+    nextEnd = Math.max(nextEnd, nextStart + minTrimLengthMs);
+  }
+
+  trimStartMs = Math.max(0, Math.min(nextStart, maxDuration - minTrimLengthMs));
+  trimEndMs = Math.max(trimStartMs + minTrimLengthMs, Math.min(nextEnd, maxDuration));
+  trimStartSlider.value = trimStartMs.toString();
+  trimEndSlider.value = trimEndMs.toString();
+
+  updateTrimTrackUI();
+  updatePredictedTrimValidation();
+}
+
+function updateTrimTrackUI() {
+  const maxDuration = activeConverter ? activeConverter.getDurationSeconds() * 1000 : playbackDurationMs;
+  const startPct = maxDuration > 0 ? (trimStartMs / maxDuration) * 100 : 0;
+  const endPct = maxDuration > 0 ? (trimEndMs / maxDuration) * 100 : 100;
+  trimTrackFill.style.left = `${startPct}%`;
+  trimTrackFill.style.width = `${Math.max(0, endPct - startPct)}%`;
+  trimRangeLabel.textContent = `${formatTime(trimStartMs)} - ${formatTime(trimEndMs)} (${formatTime(trimEndMs - trimStartMs)})`;
+}
+
+function updateTrimmedOutputs() {
+  if (!activeConverter) return;
+
+  const trimRange = { startMs: trimStartMs, endMs: trimEndMs };
+  activeEffects = activeConverter.getTrimmedLightEffects(trimRange);
+  generatedXsq = activeConverter.generateTrimmedLightshow(trimRange);
+  generatedFseq = activeConverter.generateTrimmedFseq(trimRange);
+  generatedZip = null;
+
+  const trimmedDurationMs = activeConverter.getTrimmedDurationSeconds(trimRange) * 1000;
+  playbackDurationMs = trimmedDurationMs;
+  timelineSlider.max = trimmedDurationMs.toString();
+  timeDuration.innerText = formatTime(trimmedDurationMs);
+
+  if (currentTimeMs > trimmedDurationMs) {
+    seekTo(trimmedDurationMs);
+  } else {
+    updatePlaybackUI();
+  }
+
+  if (visualizer) {
+    visualizer.setLightEffects(activeEffects);
+    visualizer.updatePlaybackTime(currentTimeMs);
+  }
+
+  updateTrimTrackUI();
+  runSimplifiedValidation(trimmedDurationMs / 1000, LightshowConverter.countLightEffects(activeEffects), !!originalWav);
+  scheduleTrimmedAudioRefresh();
+}
+
+function updatePredictedTrimValidation() {
+  if (!activeConverter) return;
+
+  const trimRange = { startMs: trimStartMs, endMs: trimEndMs };
+  const trimmedDurationSeconds = activeConverter.getTrimmedDurationSeconds(trimRange);
+  const trimmedEffectsCount = activeConverter.getTrimmedTotalEffectsCount(trimRange);
+  runSimplifiedValidation(trimmedDurationSeconds, trimmedEffectsCount, !!originalWav);
+}
+
+function getCurrentTrimKey(): string {
+  return `${Math.round(trimStartMs)}:${Math.round(trimEndMs)}`;
+}
+
+function scheduleTrimmedAudioRefresh() {
+  if (!originalWav) return;
+  pendingTrimAudioVersion++;
+  const version = pendingTrimAudioVersion;
+
+  if (trimAudioTimer !== null) {
+    window.clearTimeout(trimAudioTimer);
+  }
+
+  trimAudioTimer = window.setTimeout(() => {
+    void ensureTrimmedAudio(version);
+  }, 180);
+}
+
+async function ensureTrimmedAudio(version = pendingTrimAudioVersion): Promise<void> {
+  if (!originalWav) return;
+
+  const trimKey = getCurrentTrimKey();
+  if (generatedWav && generatedWavTrimKey === trimKey) return;
+
+  try {
+    const trimmedWav = await trimWavBlob(originalWav, trimStartMs, trimEndMs);
+    if (version < pendingTrimAudioVersion && trimKey !== getCurrentTrimKey()) {
+      return;
+    }
+
+    generatedWav = trimmedWav;
+    generatedWavTrimKey = trimKey;
+    generatedZip = null;
+    replacePreviewAudio(trimmedWav);
+    setupDownloadUrls();
+  } catch (err) {
+    logConsole(`Warning: Audio trim failed: ${err instanceof Error ? err.message : String(err)}`, "warning");
+  }
+}
+
+function replacePreviewAudio(audioBlob: Blob) {
+  const wasPlaying = isPlaying;
+  const wasMuted = audio ? audio.muted : false;
+
+  if (audio) {
+    audio.pause();
+    audio.src = "";
+    audio.load();
+    audio = null;
+  }
+
+  if (audioUrl) {
+    URL.revokeObjectURL(audioUrl);
+  }
+
+  audioUrl = URL.createObjectURL(audioBlob);
+  audio = new Audio(audioUrl);
+  audio.volume = 1.0;
+  audio.muted = wasMuted;
+  audio.currentTime = Math.min(currentTimeMs, playbackDurationMs) / 1000;
+  audio.addEventListener("ended", () => {
+    pausePlayback();
+    seekTo(0);
+  });
+
+  btnMute.removeAttribute("disabled");
+  updateMuteUI();
+
+  if (wasPlaying) {
+    audio.play().catch((err) => {
+      console.warn("Audio autoplay blocked or failed after trim.", err);
+    });
+  }
+}
+
 // --- Tesla Compatibility Validator ---
-function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolean) {
-  const durationSeconds = converter.getDurationSeconds();
-  const totalEffects = converter.getTotalEffectsCount();
+function runSimplifiedValidation(durationSeconds: number, totalEffects: number, hasAudio: boolean) {
   const commandsCount = totalEffects * 2;
   const commandLimit = 3500;
   const commandRatio = commandsCount / commandLimit;
@@ -949,10 +1166,10 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
     warnings.push(`<strong>Memory limit exceeded:</strong> Sequence contains <strong>${commandsCount.toLocaleString()}</strong> commands, which exceeds the Tesla hardware memory limit of 3,500. The show will fail to load or crash on the vehicle.`);
   } else {
     // Passed memory check
-    commandProgressEl.classList.add("bg-neutral-400", "dark:bg-neutral-600");
+    commandProgressEl.classList.add("bg-black");
     commandRatioEl.className = "font-mono text-[10px] text-muted-foreground font-semibold";
     checkMemoryIcon.textContent = "✓";
-    checkMemoryIcon.className = "text-muted-foreground text-xs font-mono font-black";
+    checkMemoryIcon.className = "text-success text-xs font-mono font-black";
   }
 
   // 2. Show Duration Check
@@ -971,7 +1188,7 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
   } else {
     // Passed duration check
     checkDurationIcon.textContent = "✓";
-    checkDurationIcon.className = "text-muted-foreground text-xs font-mono font-black";
+    checkDurationIcon.className = "text-success text-xs font-mono font-black";
     metricDuration.className = "font-mono text-[10px] text-base-content font-medium";
   }
 
@@ -979,7 +1196,7 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
   if (hasAudio) {
     metricAudio.textContent = "WAV OK";
     checkAudioIcon.textContent = "✓";
-    checkAudioIcon.className = "text-muted-foreground text-xs font-mono font-black";
+    checkAudioIcon.className = "text-success text-xs font-mono font-black";
     metricAudio.className = "font-mono text-[10px] text-base-content font-medium";
   } else {
     metricAudio.textContent = "Missing";
@@ -999,9 +1216,9 @@ function runSimplifiedValidation(converter: LightshowConverter, hasAudio: boolea
     headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m15 9-6 6M9 9l6 6"/></svg>`;
   } else {
     statusBadge.textContent = "Passed";
-    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border-0 select-none bg-neutral-200/60 text-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300 transition-all-300";
+    statusBadge.className = "badge badge-sm font-bold gap-1 text-[9px] px-2.5 py-0.5 uppercase rounded-full tracking-wider border-0 select-none bg-success/10 text-success transition-all-300";
     
-    headerIconContainer.className = "flex items-center justify-center text-success shrink-0 transition-all-300";
+    headerIconContainer.className = "flex items-center justify-center text-green-500 dark:text-green-400 shrink-0 transition-all-300";
     headerIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
   }
 
