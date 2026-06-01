@@ -276,26 +276,23 @@ export class AppController {
       } events.`,
     );
 
-    await updateProgress(40, "Translating light events...");
+    await updateProgress(40, "Preparing synchronized audio...");
     const converter = new LightshowConverter(
       this.parsedInfo._beatsPerMinute,
       normalizedMap,
       100,
     );
-    this.generatedXsq = converter.generateLightshow();
-    logConsole("Successfully compiled lightshow layout XML.", "success");
-
-    await updateProgress(60, "Generating ready FSEQ commands...");
-    this.generatedFseq = converter.generateFseq();
-    logConsole(
-      `Successfully generated FSEQ binary sequence (${this.generatedFseq.length} bytes).`,
-      "success",
-    );
 
     const audioFile = this.findAudioFile();
     if (audioFile) {
-      await updateProgress(75, "Transcoding OGG audio to WAV...");
-      await this.transcodeAudio(audioFile);
+      await updateProgress(50, "Transcoding OGG audio to WAV...");
+      const audioDurationMs = await this.transcodeAudio(audioFile);
+      if (audioDurationMs !== null) {
+        converter.setMinimumDurationMs(audioDurationMs);
+        logConsole(
+          `Using audio duration for sequence length (${(audioDurationMs / 1000).toFixed(3)}s).`,
+        );
+      }
     } else {
       logConsole(
         `Warning: Audio file "${
@@ -304,6 +301,17 @@ export class AppController {
         "warning",
       );
     }
+
+    await updateProgress(60, "Translating light events...");
+    this.generatedXsq = converter.generateLightshow();
+    logConsole("Successfully compiled lightshow layout XML.", "success");
+
+    await updateProgress(75, "Generating ready FSEQ commands...");
+    this.generatedFseq = converter.generateFseq();
+    logConsole(
+      `Successfully generated FSEQ binary sequence (${this.generatedFseq.length} bytes).`,
+      "success",
+    );
 
     await updateProgress(90, "Packaging outputs bundle ZIP...");
     this.generatedZip = await this.createCurrentOutputZip();
@@ -381,13 +389,15 @@ export class AppController {
     return null;
   }
 
-  private async transcodeAudio(audioFile: MapFile) {
+  private async transcodeAudio(audioFile: MapFile): Promise<number | null> {
     try {
-      const { convertOggToWav } = await import("../wav-encoder");
-      this.generatedWav = await convertOggToWav(audioFile.data, (progressMsg) => {
+      const { convertOggToWavWithMetadata } = await import("../wav-encoder");
+      const result = await convertOggToWavWithMetadata(audioFile.data, (progressMsg) => {
         logConsole(`Transcoder: ${progressMsg}`);
       });
+      this.generatedWav = result.blob;
       logConsole("Audio transcoding completed successfully!", "success");
+      return result.durationMs;
     } catch (audioErr) {
       logConsole(
         `Warning: Audio transcoding failed: ${
@@ -395,6 +405,7 @@ export class AppController {
         }`,
         "warning",
       );
+      return null;
     }
   }
 

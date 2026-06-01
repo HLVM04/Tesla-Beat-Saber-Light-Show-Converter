@@ -8,6 +8,7 @@ import { TEMPLATE_XSQ } from "./template";
 export const LightBlinkDuration = 100;
 export const SequenceBufferTime = 5.0; // seconds
 export const MillisecondsPerMinute = 60000.0;
+export const FseqStepTimeMs = 20;
 
 export interface LightEffect {
   startTime: number; // in milliseconds
@@ -143,6 +144,7 @@ export class LightshowConverter {
   private effectsData: Record<string, LightEffect[]> = {};
   private lastBlockTime: number = 0;
   private blinkDuration: number;
+  private minimumDurationMs: number | null = null;
 
   constructor(bpm: number, mapData: MapData, blinkDuration: number = 100) {
     this.bpmPerMillisecond = bpm / MillisecondsPerMinute;
@@ -174,6 +176,15 @@ export class LightshowConverter {
     }
 
     return this.buildFseqContent(this.effectsData, this.getDurationSeconds() * 1000);
+  }
+
+  public setMinimumDurationMs(durationMs: number | null): void {
+    if (durationMs === null || !Number.isFinite(durationMs) || durationMs <= 0) {
+      this.minimumDurationMs = null;
+      return;
+    }
+
+    this.minimumDurationMs = Math.max(FseqStepTimeMs, Math.floor(durationMs / FseqStepTimeMs) * FseqStepTimeMs);
   }
 
   public generateTrimmedLightshow(trimRange: TrimRange): string {
@@ -260,7 +271,7 @@ export class LightshowConverter {
   }
 
   private buildFseqContent(effectsData: Record<string, LightEffect[]>, durationMs: number): Uint8Array {
-    const stepTimeMs = 20;
+    const stepTimeMs = FseqStepTimeMs;
     const channelCount = 200;
     const frameCount = Math.max(1, Math.ceil(durationMs / stepTimeMs));
     const headerSize = 32;
@@ -277,8 +288,8 @@ export class LightshowConverter {
     // 4-5: Channel data start offset (32)
     view.setUint16(4, headerSize, true);
 
-    // 6: Minor version (0)
-    buffer[6] = 0;
+    // 6: Minor version (2). Tesla validates FSEQ v2.0 and modern xLights v2.2.
+    buffer[6] = 2;
     // 7: Major version (2)
     buffer[7] = 2;
 
@@ -309,8 +320,8 @@ export class LightshowConverter {
     // 23: Reserved (0)
     buffer[23] = 0;
 
-    // 24-31: Unique identifier UUID (8 bytes)
-    const uuid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+    // 24-31: Stable sequence identifier.
+    const uuid = this.createFseqIdentifier(effectsData, channelCount, frameCount, stepTimeMs);
     for (let i = 0; i < 8; i++) {
       buffer[24 + i] = uuid[i];
     }
@@ -368,17 +379,20 @@ export class LightshowConverter {
 
     // Populate frame channel data (starts at offset 32)
     for (let f = 0; f < frameCount; f++) {
-      const t = f * stepTimeMs;
       const frameStartOffset = headerSize + f * channelCount;
 
       for (const [lightName, effects] of Object.entries(effectsData)) {
         const channelIndex = nameToChannel[lightName];
         if (channelIndex === undefined) continue;
 
-        // Check if any effect overlaps timestamp t
-        const isActive = effects.some(
-          (effect) => effect.startTime <= t && t < effect.endTime
-        );
+        const isActive = effects.some((effect) => {
+          const startFrame = Math.round(effect.startTime / stepTimeMs);
+          const frameLength = Math.max(
+            1,
+            Math.round((effect.endTime - effect.startTime) / stepTimeMs)
+          );
+          return startFrame <= f && f < startFrame + frameLength;
+        });
 
         if (isActive) {
           buffer[frameStartOffset + (channelIndex - 1)] = 0xFF;
@@ -387,6 +401,49 @@ export class LightshowConverter {
     }
 
     return buffer;
+  }
+
+  private createFseqIdentifier(
+    effectsData: Record<string, LightEffect[]>,
+    channelCount: number,
+    frameCount: number,
+    stepTimeMs: number
+  ): number[] {
+    let hash = 0x811c9dc5;
+    const updateHash = (value: number) => {
+      hash ^= value & 0xff;
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    };
+
+    for (const value of [channelCount, frameCount, stepTimeMs]) {
+      updateHash(value);
+      updateHash(value >> 8);
+      updateHash(value >> 16);
+      updateHash(value >> 24);
+    }
+
+    for (const [name, effects] of Object.entries(effectsData).sort(([a], [b]) => a.localeCompare(b))) {
+      for (let i = 0; i < name.length; i++) updateHash(name.charCodeAt(i));
+      for (const effect of effects) {
+        const start = Math.floor(effect.startTime);
+        const end = Math.floor(effect.endTime);
+        updateHash(start);
+        updateHash(start >> 8);
+        updateHash(start >> 16);
+        updateHash(start >> 24);
+        updateHash(end);
+        updateHash(end >> 8);
+        updateHash(end >> 16);
+        updateHash(end >> 24);
+      }
+    }
+
+    const id: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      id.push((hash >> ((i % 4) * 8)) & 0xff);
+      hash = Math.imul(hash ^ (i + 1), 0x01000193) >>> 0;
+    }
+    return id;
   }
 
 
@@ -399,7 +456,8 @@ export class LightshowConverter {
   }
 
   public getDurationSeconds(): number {
-    return this.lastBlockTime / 1000 + SequenceBufferTime;
+    const mappedDurationMs = this.lastBlockTime + SequenceBufferTime * 1000;
+    return Math.max(mappedDurationMs, this.minimumDurationMs ?? 0) / 1000;
   }
 
   private calculateLastBlockTime(): void {

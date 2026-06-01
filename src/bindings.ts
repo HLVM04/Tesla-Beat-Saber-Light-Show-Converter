@@ -38,8 +38,8 @@ export const RearLights: Record<number, string> = {
 export const LightBindingsLeft: Record<string, string[]> = {
   "00": [LeftLights[7], LeftLights[8]],
   "01": [LeftLights[7], LeftLights[8], LeftLights[9]],
-  "02": [LeftLights[7], LeftLights[10], LeftLights[9]],
-  "03": [LeftLights[7], LeftLights[10]],
+  "02": [LeftLights[7], LeftLights[9]],
+  "03": [LeftLights[7]],
   "10": [LeftLights[1]],
   "11": [LeftLights[1], LeftLights[3]],
   "12": [LeftLights[2], LeftLights[3]],
@@ -51,8 +51,8 @@ export const LightBindingsLeft: Record<string, string[]> = {
 };
 
 export const LightBindingsRight: Record<string, string[]> = {
-  "00": [RightLights[7], RightLights[10]],
-  "01": [RightLights[7], RightLights[10], RightLights[9]],
+  "00": [RightLights[7]],
+  "01": [RightLights[7], RightLights[9]],
   "02": [RightLights[7], RightLights[8], RightLights[9]],
   "03": [RightLights[7], RightLights[8]],
   "10": [RightLights[2]],

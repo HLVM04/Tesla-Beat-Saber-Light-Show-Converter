@@ -175,6 +175,26 @@ describe("Lightshow Converter Logic", () => {
       expect(xml).toContain('name="Left Outer Main Beam"');
     });
 
+    it("should skip side marker effects because xLights does not render those hidden models", () => {
+      const sideMarkerMapData: MapData = {
+        _version: "2.0.0",
+        _notes: [
+          { _time: 1.0, _lineIndex: 2, _lineLayer: 0, _type: 0 },
+          { _time: 2.0, _lineIndex: 0, _lineLayer: 0, _type: 1 },
+        ],
+        _events: [],
+      };
+      const converter = new LightshowConverter(120, sideMarkerMapData, 100);
+      const xml = converter.generateLightshow();
+
+      expect(xml).toContain('<Element type="model" name="Left Side Marker">');
+      expect(xml).toContain('<Element type="model" name="Right Side Marker">');
+      expect(xml).toContain('name="Left Side Marker">\n      <EffectLayer/>\n    </Element>');
+      expect(xml).toContain('name="Right Side Marker">\n      <EffectLayer/>\n    </Element>');
+      expect(xml).not.toContain('name="Left Side Marker">\n      <EffectLayer>\n');
+      expect(xml).not.toContain('name="Right Side Marker">\n      <EffectLayer>\n');
+    });
+
     it("should generate valid FSEQ binary files matching the FSEQ format specifications", () => {
       const converter = new LightshowConverter(120, mockMapData, 100);
       const fseq = converter.generateFseq();
@@ -191,7 +211,7 @@ describe("Lightshow Converter Logic", () => {
       expect(fseq[3]).toBe(0x51); // 'Q'
 
       // Verify version
-      expect(fseq[6]).toBe(0); // minor
+      expect(fseq[6]).toBe(2); // minor
       expect(fseq[7]).toBe(2); // major
 
       // Channel data start offset
@@ -207,9 +227,8 @@ describe("Lightshow Converter Logic", () => {
       const stepTime = fseq[18];
       expect(stepTime).toBe(20);
 
-      // UUID verification
-      expect(fseq[24]).toBe(0x01);
-      expect(fseq[31]).toBe(0x08);
+      // Stable identifier should not be the old placeholder bytes.
+      expect(Array.from(fseq.slice(24, 32))).not.toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
 
       // Check that frame channel data contains active points (0xFF) and inactive (0x00)
       let hasOn = false;
@@ -220,6 +239,20 @@ describe("Lightshow Converter Logic", () => {
       }
       expect(hasOn).toBe(true);
       expect(hasOff).toBe(true);
+    });
+
+    it("should use an explicit audio duration as the minimum FSEQ duration", () => {
+      const converter = new LightshowConverter(120, mockMapData, 100);
+      converter.setMinimumDurationMs(139834.375);
+
+      const xml = converter.generateLightshow();
+      const fseq = converter.generateFseq();
+      const view = new DataView(fseq.buffer);
+
+      expect(converter.getDurationSeconds()).toBeCloseTo(139.82);
+      expect(xml).toContain("<sequenceDuration>139.820</sequenceDuration>");
+      expect(view.getUint32(14, true)).toBe(6991);
+      expect(fseq.length).toBe(32 + 200 * 6991);
     });
 
     it("should trim light effects, shift them to zero, and update command counts", () => {

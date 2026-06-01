@@ -284,6 +284,12 @@ export const TEMPLATE_XSQ = `<?xml version="1.0" encoding="UTF-8"?>
     <Element type="model" name="Right Front Turn">
       <EffectLayer/>
     </Element>
+    <Element type="model" name="Left Side Marker">
+      <EffectLayer/>
+    </Element>
+    <Element type="model" name="Right Side Marker">
+      <EffectLayer/>
+    </Element>
     <Element type="model" name="Left Front Fog">
       <EffectLayer/>
     </Element>

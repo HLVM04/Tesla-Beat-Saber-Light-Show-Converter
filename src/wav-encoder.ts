@@ -1,3 +1,8 @@
+export interface WavConversionResult {
+  blob: Blob;
+  durationMs: number;
+}
+
 /**
  * Decodes an OGG (or other browser-supported audio format) ArrayBuffer
  * and encodes it into a standard 16-bit PCM stereo WAV Blob.
@@ -6,6 +11,13 @@ export async function convertOggToWav(
   oggArrayBuffer: ArrayBuffer,
   onProgress?: (msg: string) => void
 ): Promise<Blob> {
+  return (await convertOggToWavWithMetadata(oggArrayBuffer, onProgress)).blob;
+}
+
+export async function convertOggToWavWithMetadata(
+  oggArrayBuffer: ArrayBuffer,
+  onProgress?: (msg: string) => void
+): Promise<WavConversionResult> {
   if (onProgress) onProgress("Initializing Web Audio Context...");
   
   // Create AudioContext (resilient to different browsers)
@@ -27,7 +39,10 @@ export async function convertOggToWav(
     const wavBlob = audioBufferToWav(decodedBuffer);
     
     if (onProgress) onProgress("WAV audio successfully encoded!");
-    return wavBlob;
+    return {
+      blob: wavBlob,
+      durationMs: decodedBuffer.duration * 1000,
+    };
   } catch (err) {
     console.error("Audio decoding failed:", err);
     throw new Error(`Failed to decode audio: ${err instanceof Error ? err.message : String(err)}`);
